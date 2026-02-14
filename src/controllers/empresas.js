@@ -84,7 +84,6 @@ module.exports = {
             //Parâmetro recebido pela URL via params ex: /usuario/1
             const {id} = request.params;
 
-            
             //instruções SQL
             const sql = `
                 UPDATE empresas SET 
@@ -137,10 +136,26 @@ module.exports = {
     },
     async apagarEmpresas (request, response) {
         try {
+            //prâmetro passado via url na chamada da api pelo front-end
+            const {id} = request.params;
+            //comando de exclusão
+            const sql = `DELETE FROM empresas WHERE usu_id = ?`;
+            //array com parâmetros na exclusão
+            const values = [id];
+            //executa instrução no banco de dados
+            const [result] = await db.query(sql,values);
+
+            if (result.affectedRows === 0) {
+                return response.status(404).json({
+                    sucesso: false,
+                    mensagem: `Empresa ${id} não encontrado`,
+                    dados: null
+                });
+            }
             return response.status(200).json (
                 {
                     sucesso: true,
-                    mensagem: 'Exclusão de empresa obtida com sucesso',
+                    mensagem: `Empresa ${id} excluído com sucesso`,
                     dados: null
                 }
             );
@@ -148,10 +163,46 @@ module.exports = {
             return response.status (500).json (
                 {
                     sucesso: false,
-                    mensagem: `Erro ao excluir empresa: ${error.message}`,
-                    dados: null
+                    mensagem: `Erro ao excluir empresa`,
+                    dados: error.message
                 }
             );
         }
     },
+    async ocultarEmpresas (request, response) {
+        try {
+
+            const status = false;
+            const {id} = request.params;
+            const sql = `
+                UPDATE empresas SET
+                    emp_status = ?
+                WHERE
+                    emp_id = ?;
+            `;
+
+            const values = [status, id];
+            const [result] = await db.query(sql, values);
+
+            if (result.affectedRows === 0) {
+                return response.status(404).json ({
+                    sucesao: false,
+                    mensagem: `Empresa ${id} não encontrado`,
+                    dados: null
+                });
+            }
+
+            return response.status(200).json ({
+                sucesso: true,
+                menagm: `Empresa ${id} excluída com sucesso`,
+                dados: null
+            });
+        } catch(error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensagem: 'Erro na exclusão',
+                dados: error.message
+            });
+        }
+    }
 }
