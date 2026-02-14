@@ -8,7 +8,7 @@ module.exports = {
             SELECT 
                 tpd_id, tpd_descricao 
             FROM TIPO_DOCUMENTOS
-            WHERE tpd_ativo = 1;
+            WHERE tpd_status = 1;
             `;
 
             const [tipoDocumentos] =  await db.query(sql);
