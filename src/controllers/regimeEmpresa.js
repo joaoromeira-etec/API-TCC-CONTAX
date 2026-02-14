@@ -6,10 +6,10 @@ module.exports = {
 
             const sql = `
                 SELECT
-                    regiemp_id, regi_id, emp_id, regiemp_data_inicio, regiemp_data_fim, 
-                    regiemp_motivo_alteracao, regiemp_status, regiemp_observacoes 
+                    regi_emp_id, regi_id, emp_id, regi_emp_data_inicio, regi_emp_data_fim, 
+                    regi_emp_motivo_alteracao, regi_emp_status, regi_emp_observacoes 
                 FROM REGIME_EMPRESA
-                WHERE regiemp_status = 1;
+                WHERE regi_emp_status = 1;
             `;
 
             const [regimeEmpresas] =  await db.query(sql);

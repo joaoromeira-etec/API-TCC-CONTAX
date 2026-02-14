@@ -9,7 +9,7 @@ module.exports = {
                 doc_id, usu_id, emp_id, tpd_id, 
                 doc_arquivo_nome, doc_data_emissao, doc_valor 
             FROM DOCUMENTOS
-            WHERE doc_ativo = 1;
+            WHERE doc_status = 1;
             `;
 
             const [documentos] =  await db.query(sql);
