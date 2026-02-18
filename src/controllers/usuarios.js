@@ -106,25 +106,20 @@ module.exports = {
                     nome,
                     email,
                     cpf,
-                    senha,
-                    telefone,
-                    status
+                    telefone
                 };
-            return response.status(200).json (
-                {
+            return response.status(200).json ({
                     sucesso: true,
                     mensagem: `Usuário ${id} atualizado com sucesso`,
                     dados
-                }
-            );
+                });
+
         } catch (error) {
-            return response.status (500).json (
-                {
+            return response.status (500).json ({
                     sucesso: false,
                     mensagem: `Erro na requisição`,
                     dados: error.message
-                }
-            );
+                });
         }
     },
     async apagarUsuarios (request, response) {
@@ -141,31 +136,29 @@ module.exports = {
             if (result.affectedRows === 0) {
                 return response.status(404).json ({
                     sucesso: false,
-                    mensagem: `Usuário ${id} excluído com sucesso`,
+                    mensagem: `Usuário ${id} não encontrado`,
                     dados: null
-                })
+                });
             }
-            return response.status(200).json (
-                {
-                    sucesso: true,
-                    mensagem: `Usuário ${id} excluído com sucesso`,
-                    dados: null
-                }
-            );
+
+            return response.status(200).json ({
+                sucesso: true,
+                mensagem: `Usuário ${id} excluído com sucesso`,
+                dados: null
+                });
+
         } catch (error) {
-            return response.status (500).json (
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao excluir usuário`,
-                    dados: error.message
-                }
-            );
+            return response.status (500).json ({
+                sucesso: false,
+                mensagem: `Erro ao excluir usuário`,
+                dados: error.message
+                });
         }
     },
     async ocultarUsuarios (request, response) {
         try {
 
-            const ativo = false;
+            const status = false;
             const {id} = request.params;
             const sql = `
                 UPDATE usuarios SET
@@ -174,7 +167,7 @@ module.exports = {
                     usu_id = ?;
             `;
 
-            const values = [usu_status, id];
+            const values = [status, id];
             const [result] = await db.query(sql, values);
 
             if (result.affectedRows  === 0) {

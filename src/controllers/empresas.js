@@ -83,18 +83,17 @@ module.exports = {
             const {nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, status} = request.body;
             //Parâmetro recebido pela URL via params ex: /usuario/1
             const {id} = request.params;
-
             //instruções SQL
             const sql = `
                 UPDATE empresas SET 
-                emp_nome_fantasia = ?, emp_razao_social = ?,
+                emp_nome_fantasia = ?, emp_razao_social = ?, emp_cnpj = ?,
                 emp_endereco = ?, emp_municipio = ?, emp_telefone = ?,
                 emp_email = ?, emp_tipo = ?, emp_status = ?
                 WHERE
                     emp_id = ?;
                 `;
                 //Preparo do array com dados que serão atualizados
-                const values = [nome, razao_social, endereco, municipio, telefone, email, tipo, status, id];
+                const values = [nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, status, id];
                 //execução e obtenção de confirmação da atualização realizada
                 const [result] = await db.query(sql, values);
 
@@ -114,24 +113,21 @@ module.exports = {
                     municipio,
                     telefone,
                     email,
-                    tipo,
-                    status
+                    tipo
                 };
-            return response.status(200).json (
-                {
-                    sucesso: true,
-                    mensagem: `Empresa ${id} atualizada com sucesso`,
-                    dados
-                }
-            );
+
+            return response.status(200).json ({
+                sucesso: true,
+                mensagem: `Empresa ${id} atualizada com sucesso`,
+                dados
+            });
+
         } catch (error) {
-            return response.status (500).json (
-                {
-                    sucesso: false,
-                    mensagem: `Erro na requisição`,
-                    dados: error.message
-                }
-            );
+            return response.status (500).json ({
+                sucesso: false,
+                mensagem: `Erro na requisição`,
+                dados: error.message
+                });
         }
     },
     async apagarEmpresas (request, response) {
@@ -139,7 +135,7 @@ module.exports = {
             //prâmetro passado via url na chamada da api pelo front-end
             const {id} = request.params;
             //comando de exclusão
-            const sql = `DELETE FROM empresas WHERE usu_id = ?`;
+            const sql = `DELETE FROM empresas WHERE emp_id = ?`;
             //array com parâmetros na exclusão
             const values = [id];
             //executa instrução no banco de dados
@@ -148,25 +144,23 @@ module.exports = {
             if (result.affectedRows === 0) {
                 return response.status(404).json({
                     sucesso: false,
-                    mensagem: `Empresa ${id} não encontrado`,
+                    mensagem: `Empresa ${id} não encontrada`,
                     dados: null
                 });
             }
-            return response.status(200).json (
-                {
-                    sucesso: true,
-                    mensagem: `Empresa ${id} excluído com sucesso`,
-                    dados: null
-                }
-            );
+
+            return response.status(200).json ({
+                sucesso: true,
+                mensagem: `Empresa ${id} excluída com sucesso`,
+                dados: null
+            });
+
         } catch (error) {
-            return response.status (500).json (
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao excluir empresa`,
-                    dados: error.message
-                }
-            );
+            return response.status (500).json ({
+                sucesso: false,
+                mensagem: `Erro ao excluir empresa`,
+                dados: error.message
+            });
         }
     },
     async ocultarEmpresas (request, response) {
@@ -186,8 +180,8 @@ module.exports = {
 
             if (result.affectedRows === 0) {
                 return response.status(404).json ({
-                    sucesao: false,
-                    mensagem: `Empresa ${id} não encontrado`,
+                    sucesso: false,
+                    mensagem: `Empresa ${id} não encontrada`,
                     dados: null
                 });
             }
@@ -197,12 +191,13 @@ module.exports = {
                 menagm: `Empresa ${id} excluída com sucesso`,
                 dados: null
             });
-        } catch(error) {
+
+        } catch (error) {
             return response.status(500).json ({
                 sucesso: false,
                 mensagem: 'Erro na exclusão',
                 dados: error.message
             });
         }
-    }
+    },
 }
