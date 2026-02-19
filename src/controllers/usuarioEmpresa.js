@@ -168,15 +168,16 @@ module.exports = {
     async ocultarUsuarioEmpresa (request, response) {
         try {
             const {id} = request.params;
-            const sql = `
+            //1. Verificar se o registro existe
+            const sqlBusca = `
                 SELECT usu_emp_id, usu_emp_status
                     FROM USUARIO_EMPRESAS
                 WHERE usu_emp_id = ?;
                     `;
 
-            const [result] = await db.query(sql, [id]);
+            const [rows] = await db.query(sqlBusca, [id]);
 
-            if (result.affectedRows === 0) {
+            if (rows.length === 0) {
                 return response.status(404).json ({
                     sucesso: false,
                     mensagem: `Usuário da empresa não encontrado`,
@@ -184,17 +185,42 @@ module.exports = {
                 });
             }
 
+            //2. Verificar se já está oculto
+            if (rows[0].usu_emp_status === 0) {
+                return response.status(400).json ({
+                    sucesso: false,
+                    mensagem: `Usuário da empresa já inativo`,
+                    dados: null
+                });
+            }
+            
+            //3. Ocultar
+            const sqlOcultar = `
+                UPDATE USUARIO_EMPRESAS
+                SET usu_emp_status = 0
+                WHERE usu_emp_id = ?;
+            `;
+            const [result] = await db.query(sqlOcultar,[id]);
+
+            if (result.affectedRows === 0) {
+                    return response.status(404).json ({
+                        sucesso: false,
+                        mensagem: `Não foi possível ocultar o usuário da empresa`,
+                        dados: null
+                    });
+            }
             return response.status(200),json ({
                 sucesso: true,
-                //desenvolver mensagem
-                mensagem: ``
+                mensagem: `Usuário da empresa oculto com sucesso`,
+                dados: null
             });
+
         } catch (error) {
             return response.status(500).json ({
                 sucesso: false,
-                mensagem: `desenvolver`,
+                mensagem: `Erro ao ocultar usuário da empresa`,
                 dados: error.message
-            })
+            });
         }
     }
 }

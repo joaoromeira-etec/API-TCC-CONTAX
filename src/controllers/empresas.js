@@ -165,25 +165,47 @@ module.exports = {
     },
     async ocultarEmpresas (request, response) {
         try {
-
-            const status = false;
             const {id} = request.params;
-            const sql = `
-                UPDATE empresas SET
-                    emp_status = ?
-                WHERE
-                    emp_id = ?;
-            `;
+            //1. Verificar se o registro existe
+            const sqlBusca = `
+                SELECT emp_id, emp_status
+                    FROM EMPRESAS
+                WHERE emp_id = ?;
+                    `;
 
-            const values = [status, id];
-            const [result] = await db.query(sql, values);
+            const [rows] = await db.query(sqlBusca, [id]);
 
-            if (result.affectedRows === 0) {
+            if (rows.length === 0) {
                 return response.status(404).json ({
                     sucesso: false,
-                    mensagem: `Empresa ${id} não encontrada`,
+                    mensagem: `Empresa não encontrada`,
                     dados: null
                 });
+            }
+
+            //2. Verificar se já está oculto
+            if (rows[0].usu_emp_status === 0) {
+                return response.status(400).json ({
+                    sucesso: false,
+                    mensagem: `Empresa já inativa`,
+                    dados: null
+                });
+            }
+            
+            //3. Ocultar
+            const sqlOcultar = `
+                UPDATE EMPRESAS
+                SET emp_status = 0
+                WHERE emp_id = ?;
+            `;
+            const [result] = await db.query(sqlOcultar,[id]);
+
+            if (result.affectedRows === 0) {
+                    return response.status(404).json ({
+                        sucesso: false,
+                        mensagem: `Não foi possível ocultar Empresa`,
+                        dados: null
+                    });
             }
 
             return response.status(200).json ({

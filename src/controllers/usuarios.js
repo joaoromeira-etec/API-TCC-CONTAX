@@ -157,25 +157,47 @@ module.exports = {
     },
     async ocultarUsuarios (request, response) {
         try {
-
-            const status = false;
             const {id} = request.params;
-            const sql = `
-                UPDATE usuarios SET
-                    usu_status = ?
-                WHERE
-                    usu_id = ?;
-            `;
+            //1. Verificar se o registro existe
+            const sqlBusca = `
+                SELECT usu_id, usu_status
+                    FROM USUARIOS
+                WHERE usu_id = ?;
+                    `;
 
-            const values = [status, id];
-            const [result] = await db.query(sql, values);
+            const [rows] = await db.query(sqlBusca, [id]);
 
-            if (result.affectedRows  === 0) {
+            if (rows.length === 0) {
                 return response.status(404).json ({
                     sucesso: false,
-                    mensagem: `Usuário ${id} não encontrado`,
+                    mensagem: `Usuário não encontrado`,
                     dados: null
                 });
+            }
+
+            //2. Verificar se já está oculto
+            if (rows[0].usu_emp_status === 0) {
+                return response.status(400).json ({
+                    sucesso: false,
+                    mensagem: `Usuário já inativo`,
+                    dados: null
+                });
+            }
+            
+            //3. Ocultar
+            const sqlOcultar = `
+                UPDATE USUARIOS
+                SET usu_status = 0
+                WHERE usu_id = ?;
+            `;
+            const [result] = await db.query(sqlOcultar,[id]);
+
+            if (result.affectedRows === 0) {
+                    return response.status(404).json ({
+                        sucesso: false,
+                        mensagem: `Não foi possível ocultar usuário`,
+                        dados: null
+                    });
             }
             
             return response.status(200).json ({
