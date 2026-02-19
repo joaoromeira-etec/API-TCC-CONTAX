@@ -46,8 +46,8 @@ module.exports = {
             // PS: regi_id e emp_id são chaves estrangeiras
             const sql = `
                 INSERT INTO REGIME_EMPRESA 
-                    (regi_id, emp_id, regiemp_data_inicio, regiemp_data_fim,
-                    regiemp_motivo_alteracao, regiemp_status, regiemp_observacoes)
+                    (regi_id, emp_id, regi_emp_data_inicio, regi_emp_data_fim,
+                    regi_emp_motivo_alteracao, regi_emp_status, regi_emp_observacoes)
                 VALUES
                     (?, ?, ?, ?, ?, ?, ?);
             `;
@@ -102,10 +102,10 @@ module.exports = {
             //Instrução SQL
             const sql = `
                 UPDATE REGIME_EMPRESA SET
-                    regi_id = ?, emp_id = ?, regiemp_data_inicio = ?, 
-                    regiemp_data_fim = ?,  regiemp_motivo_alteracao = ?, 
-                    regiemp_status = ?, regiemp_observacoes = ?
-                WHERE regiemp_id = ?;
+                    regi_id = ?, emp_id = ?, regi_emp_data_inicio = ?, 
+                    regi_emp_data_fim = ?,  regi_emp_motivo_alteracao = ?, 
+                    regi_emp_status = ?, regi_emp_observacoes = ?
+                WHERE regi_emp_id = ?;
             `;
 
             //Valores em array.
@@ -159,7 +159,7 @@ module.exports = {
         // DELETE físico
         const sql = `
             DELETE FROM REGIME_EMPRESA
-            WHERE regiemp_id = ?;
+            WHERE regi_emp_id = ?;
         `;
         const [result] = await db.query(sql, [id]);
 
@@ -192,9 +192,9 @@ module.exports = {
 
         // 1. Verificar se o registro existe
         const sqlBusca = `
-            SELECT regiemp_id, regiemp_status
+            SELECT regi_emp_id, regi_emp_status
             FROM REGIME_EMPRESA
-            WHERE regiemp_id = ?;
+            WHERE regi_emp_id = ?;
         `;
         const [rows] = await db.query(sqlBusca, [id]);
 
