@@ -43,13 +43,13 @@ const {
     regi_nome,
     regi_descricao,
     regi_limite_faturamento_anual,
-    regi_tipo_empresa_permitida
+    regi_tipo_emp_permitida
 } = request.body;
 
 // Instrução SQL
 const sql = `
     INSERT INTO REGIME
-        (regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_empresa_permitida)
+        (regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida)
     VALUES
         (?, ?, ?, ?);
 `;
@@ -59,7 +59,7 @@ const values = [
     regi_nome,
     regi_descricao,
     regi_limite_faturamento_anual,
-    regi_tipo_empresa_permitida
+    regi_tipo_emp_permitida
 ];
 
 // Execução da query
@@ -71,7 +71,7 @@ const dados = {
     regi_nome,
     regi_descricao,
     regi_limite_faturamento_anual,
-    regi_tipo_empresa_permitida
+    regi_tipo_emp_permitida
 };
 
 return response.status(200).json({
@@ -96,7 +96,7 @@ return response.status(200).json({
     try {
 
         // Parâmetros do corpo da requisição
-        const { regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_empresa_permitida } = request.body;
+        const { regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida } = request.body;
 
         // Parâmetro da rota via URL
         const { id } = request.params;
@@ -107,13 +107,13 @@ return response.status(200).json({
                 regi_nome = ?, 
                 regi_descricao = ?, 
                 regi_limite_faturamento_anual = ?, 
-                regi_tipo_empresa_permitida = ?
+                regi_tipo_emp_permitida = ?
             WHERE
                 regi_id = ?;
         `;
 
         // Valores em array
-        const values = [regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_empresa_permitida, id];
+        const values = [regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida, id];
 
         // Execução da query
         const [result] = await db.query(sql, values);
@@ -131,7 +131,7 @@ return response.status(200).json({
             regi_nome,
             regi_descricao,
             regi_limite_faturamento_anual,
-            regi_tipo_empresa_permitida
+            regi_tipo_emp_permitida
         };
 
         return response.status(200).json({

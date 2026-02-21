@@ -39,18 +39,19 @@ module.exports = {
 
             //Dados do corpo da requisição
             const { usu_id, emp_id, tpd_id, nome, dt_emissao, valor } = request.body;
+            const doc_status = 1;
 
             //Instrução SQL
             // PS: usu_id, emp_id e tpd_id são chaves estrangeiras
             const sql = `
             INSERT INTO DOCUMENTOS 
-                (usu_id, emp_id, tpd_id, doc_arquivo_nome, doc_data_emissao, doc_valor) 
+                (usu_id, emp_id, tpd_id, doc_arquivo_nome, doc_data_emissao, doc_valor, doc_status) 
             VALUES
-                (?, ?, ?, ?, ?, ?);
+                (?, ?, ?, ?, ?, ?, ?);
             `;
 
             //Valores
-            const values = [usu_id, emp_id, tpd_id, nome, dt_emissao, valor];
+            const values = [usu_id, emp_id, tpd_id, nome, dt_emissao, valor, doc_status];
 
             //Execução da query
             const [result] =  await db.query(sql, values);
