@@ -98,6 +98,43 @@ module.exports = {
             );
         }
     },
+    async login (request, response) {
+        try {
+            const {email, senha} = request.query;
+
+            const sql = `
+                SELECT 
+                    usu_id, usu_nome, 
+                FROM USUARIOS
+                WHERE usu_email = ? AND usu_senha = ? AND usu_ativo = 1;
+            `;
+        
+            const values = [email, senha];
+
+            const [rows] = await db.query(sql, values);
+            const nitens = rows.length;
+
+        if (nItens <1) {
+            return response.status(403).json ({
+                sucesso: false,
+                mensagem: 'Login e/ou senha inválida',
+                dados: null,
+            });
+        }
+
+        return response.status(200).json ({
+            sucesso: true,
+            mensagem: 'Login efetuado com sucesso',
+            dados: rows
+        });
+        } catch (error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensagem: 'Erro na requisição',
+                dados: error.message
+            });
+        }
+    },
     async editarUsuarios (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição
