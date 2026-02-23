@@ -31,6 +31,29 @@ module.exports = {
             );
         }
     },
+    async listarEmps (request, response) {
+        try {
+            const sql = `
+            SELECT DISTINCT emp_nome_fantasia
+            FROM EMPRESAS
+            ORDER BY emp_nome_fantasia ASC;
+            `;
+
+        const [rows] = await db.query(sql);
+
+        return response.status(200).json ({
+            sucesso: true,
+            mensagem: 'Lista de empresas',
+            dados: rows
+        });
+        } catch (error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensagem: 'Erro na requisição',
+                dados: error.message
+            });
+        }
+    },
     async cadastrarEmpresas (request, response) {
         try {
 
