@@ -31,6 +31,29 @@ module.exports = {
             );
         }
     },
+    async listarUsus(request, response) {
+        try {
+            const sql = `
+                SELECT DISTINCT usu_nome
+                FROM USUARIOS
+                ORDER BY usu_nome ASC;
+                `;
+            
+            const [rows] = await db.query(sql);
+
+            return response.status(200).json ({
+                sucesso: true,
+                mensagem: 'Lista de usuários:',
+                dados:rows
+            });
+        } catch (error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensgem: 'Erro na requisição',
+                dados: error.message
+            });
+        }
+    },
     async cadastrarUsuarios (request, response) {
         try {
             const {nome, email, cpf, senha, telefone, alterar_senha} = request.body;
