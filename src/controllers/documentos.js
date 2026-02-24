@@ -146,10 +146,13 @@ module.exports = {
 
     async apagarDocumentos(request, response) {
     try {
+
         const { id } = request.params;
 
         const sql = `DELETE FROM DOCUMENTOS WHERE doc_id = ?;`;
+
         const [result] = await db.query(sql, [id]);
+
 
         if (result.affectedRows === 0) {
             return response.status(404).json({
@@ -179,7 +182,7 @@ module.exports = {
 
         // 1. Verificar se o documento existe
         const sqlBusca = `
-            SELECT doc_id, doc_ativo
+            SELECT  doc_id, doc_status
             FROM DOCUMENTOS
             WHERE doc_id = ?;
         `;
@@ -205,7 +208,7 @@ module.exports = {
         // 3. Ocultar (soft delete)
         const sqlOcultar = `
             UPDATE DOCUMENTOS
-            SET doc_ativo = 0
+            SET doc_status = 0
             WHERE doc_id = ?;
         `;
         const [result] = await db.query(sqlOcultar, [id]);

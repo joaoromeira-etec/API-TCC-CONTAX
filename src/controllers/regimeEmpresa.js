@@ -39,7 +39,8 @@ module.exports = {
 
             //Dados do corpo da requisição
             const { regi_id, emp_id, dt_inicio, dt_fim,
-                motivo_alteracao, status, observacoes } = request.body;
+                motivo_alteracao, observacoes } = request.body;
+            const regi_emp_status = 1;
 
 
             //Instrução SQL
@@ -54,7 +55,7 @@ module.exports = {
 
             //Valores
             const values = [regi_id, emp_id, dt_inicio, dt_fim,
-                motivo_alteracao, status, observacoes];
+                motivo_alteracao, regi_emp_status, observacoes];
 
             //Execução da query
             const [result] =  await db.query(sql, values);
@@ -67,7 +68,6 @@ module.exports = {
                 dt_inicio,
                 dt_fim,
                 motivo_alteracao,
-                status,
                 observacoes
             };
 

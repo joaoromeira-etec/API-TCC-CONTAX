@@ -41,7 +41,8 @@ return response.status(200).json({
     try {
 
       // Dados do corpo da requisição
-const { usu_id, aud_acao, aud_tabela_afetada, aud_registro_afetado, aud_data_acao } = request.body;
+const { usu_id, acao, tabela_afetada, registro_afetado, dt_acao } = request.body;
+const aud_status = 1;
 
 // Instrução SQL
 const sql = `
@@ -54,10 +55,11 @@ const sql = `
 // Valores
 const values = [
     usu_id,
-    aud_acao,
-    aud_tabela_afetada,
-    aud_registro_afetado,
-    aud_data_acao
+    acao,
+    tabela_afetada,
+    registro_afetado,
+    dt_acao,
+    aud_status
 ];
 
 // Execução da query
@@ -67,10 +69,10 @@ const [result] = await db.query(sql, values);
 const dados = {
     id: result.insertId,
     usu_id,
-    aud_acao,
-    aud_tabela_afetada,
-    aud_registro_afetado,
-    aud_data_acao
+    acao,
+    tabela_afetada,
+    registro_afetado,
+    dt_acao
 };
 
 return response.status(200).json({
@@ -191,7 +193,12 @@ return response.status(200).json({
       const { id } = request.params;
 
       // Verificar se existe
-      const sqlBusca = `SELECT aud_id, aud_status FROM AUDITORIA WHERE aud_id = ?;`;
+      const sqlBusca = `
+        SELECT aud_id, aud_status 
+          FROM AUDITORIA 
+        WHERE aud_id = ?;
+      `;
+
       const [rows] = await db.query(sqlBusca, [id]);
 
       if (rows.length === 0) {
@@ -210,8 +217,12 @@ return response.status(200).json({
         });
       }
 
+
       // Soft delete
-      const sqlOcultar = `UPDATE AUDITORIA SET aud_status = 0 WHERE aud_id = ?;`;
+      const sqlOcultar = `
+      UPDATE AUDITORIA SET aud_status = 0 
+      WHERE aud_id = ?;`;
+
       const [result] = await db.query(sqlOcultar, [id]);
 
       if (result.affectedRows === 0) {

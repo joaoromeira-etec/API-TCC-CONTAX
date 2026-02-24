@@ -39,7 +39,8 @@ module.exports = {
 
             //Dados do corpo da requisição
             const { usu_id_solicitante, usu_id_responsavel, assunto, descricao,
-                status, dt_abertura, dt_suporte, sup_id_resp } = request.body;
+                 dt_abertura, dt_suporte, sup_id_resp } = request.body;
+            const sup_status = 1;
 
             //Instrução SQL
             // PS: usu_id_solicitante e usu_id_responsavel são chaves estrangeiras
@@ -53,7 +54,7 @@ module.exports = {
 
             //Valores
             const values = [usu_id_solicitante, usu_id_responsavel, assunto, descricao,
-                status, dt_abertura, dt_suporte, sup_id_resp];
+                sup_status, dt_abertura, dt_suporte, sup_id_resp];
 
             //Execução da query
             const [result] =  await db.query(sql, values);
@@ -65,7 +66,6 @@ module.exports = {
                 usu_id_responsavel,
                 assunto,
                 descricao,
-                status,
                 dt_abertura,
                 dt_suporte,
                 sup_id_resp
