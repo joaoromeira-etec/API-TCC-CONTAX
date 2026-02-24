@@ -54,6 +54,42 @@ module.exports = {
             });
         }
     },
+    async loginEmpresas (request, response) {
+        try {
+
+            const {email, senha} = request.query;
+            //verificar se precisa fazer lgin da empresa; se sim adicionar campo de senha da empresa
+            const sql = ` 
+                SELECT emp_id, emp_razao_social, emp_cnpj
+                FROM EMPRESAS
+                WHERE emp_emalil = ? AND emp_senha_hash = ? AND emp_status = 1;
+            `;
+
+            const values = [email, senha];
+
+            const [rows] = await db.query(sql, values);
+            const nItens = rows.length;
+
+            if (nItens < 1) {
+                return response.status(403).json ({
+                    sucesso: false,
+                    mensagem: 'Login e/ou senha inválida',
+                    dados: null,
+                });
+            }
+            return response.status(200).json ({
+                sucesso: true,
+                mensagem: 'Login efetuado com sucesso',
+                dados:rows
+            });
+        } catch (error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensagem: 'Erro na requisição',
+                dados: error.message
+            });
+        }
+    },
     async cadastrarEmpresas (request, response) {
         try {
 

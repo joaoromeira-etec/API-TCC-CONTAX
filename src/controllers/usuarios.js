@@ -98,7 +98,7 @@ module.exports = {
             );
         }
     },
-    async login (request, response) {
+    async loginUsuarios (request, response) {
         try {
             const {email, senha} = request.query;
 
@@ -106,7 +106,7 @@ module.exports = {
                 SELECT 
                     usu_id, usu_nome, 
                 FROM USUARIOS
-                WHERE usu_email = ? AND usu_senha = ? AND usu_ativo = 1;
+                WHERE usu_email = ? AND usu_senha_hash = ? AND usu_status = 1;
             `;
         
             const values = [email, senha];
