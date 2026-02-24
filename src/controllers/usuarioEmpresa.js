@@ -34,7 +34,8 @@ module.exports = {
 
             //Dados do corpo da requisição
             const {emp_id, usu_id, nivel_acesso,
-                   data_vinculo, status, observacoes} = request.body;
+                   data_vinculo, observacoes} = request.body;
+            const usu_emp_status = 1;
 
             const sql = `
             INSERT INTO USUARIO_EMPRESAS
@@ -45,7 +46,7 @@ module.exports = {
             `;
             
             const values = [emp_id, usu_id, nivel_acesso,
-                            data_vinculo, status, observacoes];
+                            data_vinculo, usu_emp_status, observacoes];
 
             const[result] = await db.query(sql, values);
             
@@ -55,7 +56,6 @@ module.exports = {
                 usu_id,
                 nivel_acesso,
                 data_vinculo,
-                status,
                 observacoes
             };
         
