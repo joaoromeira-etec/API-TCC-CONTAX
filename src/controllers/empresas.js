@@ -34,9 +34,12 @@ module.exports = {
     async listarEmps (request, response) {
         try {
             const sql = `
-            SELECT DISTINCT emp_nome_fantasia
-            FROM EMPRESAS
-            ORDER BY emp_nome_fantasia ASC;
+            SELECT DISTINCT 
+                emp_nome_fantasia
+            FROM 
+                EMPRESAS
+            ORDER BY 
+                emp_nome_fantasia ASC;
             `;
 
         const [rows] = await db.query(sql);
@@ -46,42 +49,6 @@ module.exports = {
             mensagem: 'Lista de empresas',
             dados: rows
         });
-        } catch (error) {
-            return response.status(500).json ({
-                sucesso: false,
-                mensagem: 'Erro na requisição',
-                dados: error.message
-            });
-        }
-    },
-    async loginEmpresas (request, response) {
-        try {
-
-            const {email, senha} = request.query;
-            //verificar se precisa fazer lgin da empresa; se sim adicionar campo de senha da empresa
-            const sql = ` 
-                SELECT emp_id, emp_razao_social, emp_cnpj
-                FROM EMPRESAS
-                WHERE emp_emalil = ? AND emp_senha_hash = ? AND emp_status = 1;
-            `;
-
-            const values = [email, senha];
-
-            const [rows] = await db.query(sql, values);
-            const nItens = rows.length;
-
-            if (nItens < 1) {
-                return response.status(403).json ({
-                    sucesso: false,
-                    mensagem: 'Login e/ou senha inválida',
-                    dados: null,
-                });
-            }
-            return response.status(200).json ({
-                sucesso: true,
-                mensagem: 'Login efetuado com sucesso',
-                dados:rows
-            });
         } catch (error) {
             return response.status(500).json ({
                 sucesso: false,
@@ -139,15 +106,18 @@ module.exports = {
     async editarEmpresas (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição
-            const {nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, status} = request.body;
+            const {nome, razao_social, cnpj, endereco, municipio,
+                telefone, email, tipo, status} = request.body;
+
             //Parâmetro recebido pela URL via params ex: /usuario/1
             const {id} = request.params;
+
             //instruções SQL
             const sql = `
                 UPDATE empresas SET 
-                emp_nome_fantasia = ?, emp_razao_social = ?, emp_cnpj = ?,
-                emp_endereco = ?, emp_municipio = ?, emp_telefone = ?,
-                emp_email = ?, emp_tipo = ?, emp_status = ?
+                    emp_nome_fantasia = ?, emp_razao_social = ?, emp_cnpj = ?,
+                    emp_endereco = ?, emp_municipio = ?, emp_telefone = ?,
+                    emp_email = ?, emp_tipo = ?, emp_status = ?
                 WHERE
                     emp_id = ?;
                 `;
@@ -172,7 +142,8 @@ module.exports = {
                     municipio,
                     telefone,
                     email,
-                    tipo
+                    tipo,
+                    status
                 };
 
             return response.status(200).json ({
@@ -243,7 +214,7 @@ module.exports = {
             }
 
             //2. Verificar se já está oculto
-            if (rows[0].usu_emp_status === 0) {
+            if (rows[0].emp_status === 0) {
                 return response.status(400).json ({
                     sucesso: false,
                     mensagem: `Empresa já inativa`,
@@ -269,7 +240,7 @@ module.exports = {
 
             return response.status(200).json ({
                 sucesso: true,
-                menagm: `Empresa ${id} excluída com sucesso`,
+                mensagem: `Empresa ${id} excluída com sucesso`,
                 dados: null
             });
 
@@ -281,4 +252,46 @@ module.exports = {
             });
         }
     },
+
+       async loginEmpresas (request, response) {
+    try {
+
+        const { email, senha } = request.query;
+
+        const sql = ` 
+            SELECT 
+                emp_id, emp_razao_social, emp_cnpj
+            FROM 
+                EMPRESAS
+            WHERE 
+                emp_email = ? AND emp_senha_hash = ? AND emp_status = 1;
+        `;
+
+        const values = [email, senha];
+
+        const [rows] = await db.query(sql, values);
+        const nItens = rows.length;
+
+        if (nItens < 1) {
+            return response.status(403).json({
+                sucesso: false,
+                mensagem: 'Login e/ou senha inválida',
+                dados: null,
+            });
+        }
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Login efetuado com sucesso',
+            dados: rows[0]
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro na requisição',
+            dados: error.message
+        });
+    }
+}
 }

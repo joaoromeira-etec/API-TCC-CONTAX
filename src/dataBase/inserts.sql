@@ -7,16 +7,16 @@ INSERT INTO USUARIOS (usu_id, usu_nome, usu_email, usu_cpf, usu_senha_hash, usu_
 (5, 'Eduarda Melo', 'eduarda@email.com', '56789012345', 'hash5', '11999990005', 1, 0),
 (6, 'Felipe Costa', 'felipe@email.com', '67890123456', 'hash6', '11999990006', 0, 1);
 
--- Inserts para EMPRESAS (incluído emp_status)
+-- Inserts para EMPRESAS (incluído emp_senha_hash e emp_status)
 INSERT INTO EMPRESAS 
-(emp_id, emp_nome_fantasia, emp_razao_social, emp_cnpj, emp_endereco, emp_municipio, emp_telefone, emp_email, emp_tipo, emp_status) 
+(emp_id, emp_nome_fantasia, emp_razao_social, emp_cnpj, emp_endereco, emp_municipio, emp_telefone, emp_email, emp_senha_hash, emp_tipo, emp_status) 
 VALUES
-(1, 'Tech Solutions', 'Tech Solutions LTDA', '12345678000101', 'Rua A, 100', 'São Paulo', '(11) 3333-1001', 'contato@techsolutions.com', 1, 1),
-(2, 'Comercial Dias', 'Comercial Dias ME', '23456789000102', 'Rua B, 200', 'Campinas', '(11) 3333-2002', 'vendas@comercialdias.com', 0, 1),
-(3, 'Melo Serviços', 'Melo Serviços EIRELI', '34567890000103', 'Rua C, 300', 'Santos', '(11) 3333-3003', 'suporte@meloservicos.com', 1, 1),
-(4, 'Lima Store', 'Lima Store MEI', '45678901000104', 'Rua D, 400', 'Sorocaba', '(11) 3333-4004', 'contato@limastore.com', 1, 1),
-(5, 'Costa Market', 'Costa Market LTDA', '56789012000105', 'Rua E, 500', 'Ribeirão Preto', '(11) 3333-5005', 'atendimento@costamarket.com', 1, 1),
-(6, 'Silva Digital', 'Silva Digital ME', '67890123000106', 'Rua F, 600', 'São Bernardo do Campo', '(11) 3333-6006', 'info@silvadigital.com', 0, 0);
+(1, 'Tech Solutions', 'Tech Solutions LTDA', '12345678000101', 'Rua A, 100', 'São Paulo', '(11) 3333-1001', 'contato@techsolutions.com', '$2b$10$hashempresa1', 1, 1),
+(2, 'Comercial Dias', 'Comercial Dias ME', '23456789000102', 'Rua B, 200', 'Campinas', '(11) 3333-2002', 'vendas@comercialdias.com', '$2b$10$hashempresa2', 0, 1),
+(3, 'Melo Serviços', 'Melo Serviços EIRELI', '34567890000103', 'Rua C, 300', 'Santos', '(11) 3333-3003', 'suporte@meloservicos.com', '$2b$10$hashempresa3', 1, 1),
+(4, 'Lima Store', 'Lima Store MEI', '45678901000104', 'Rua D, 400', 'Sorocaba', '(11) 3333-4004', 'contato@limastore.com', '$2b$10$hashempresa4', 1, 1),
+(5, 'Costa Market', 'Costa Market LTDA', '56789012000105', 'Rua E, 500', 'Ribeirão Preto', '(11) 3333-5005', 'atendimento@costamarket.com', '$2b$10$hashempresa5', 1, 1),
+(6, 'Silva Digital', 'Silva Digital ME', '67890123000106', 'Rua F, 600', 'São Bernardo do Campo', '(11) 3333-6006', 'info@silvadigital.com', '$2b$10$hashempresa6', 0, 0);
 
 -- Inserts para USUARIO_EMPRESAS
 INSERT INTO USUARIO_EMPRESAS 

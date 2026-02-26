@@ -34,10 +34,13 @@ module.exports = {
     async listarUsus(request, response) {
         try {
             const sql = `
-                SELECT DISTINCT usu_nome
-                FROM USUARIOS
-                ORDER BY usu_nome ASC;
-                `;
+                SELECT DISTINCT 
+                    usu_nome
+                FROM 
+                    USUARIOS
+                ORDER BY 
+                    usu_nome ASC;
+            `;
             
             const [rows] = await db.query(sql);
 
@@ -96,43 +99,6 @@ module.exports = {
                     dados: error.message
                 }
             );
-        }
-    },
-    async loginUsuarios (request, response) {
-        try {
-            const {email, senha} = request.query;
-
-            const sql = `
-                SELECT 
-                    usu_id, usu_nome, 
-                FROM USUARIOS
-                WHERE usu_email = ? AND usu_senha_hash = ? AND usu_status = 1;
-            `;
-        
-            const values = [email, senha];
-
-            const [rows] = await db.query(sql, values);
-            const nitens = rows.length;
-
-        if (nItens <1) {
-            return response.status(403).json ({
-                sucesso: false,
-                mensagem: 'Login e/ou senha inválida',
-                dados: null,
-            });
-        }
-
-        return response.status(200).json ({
-            sucesso: true,
-            mensagem: 'Login efetuado com sucesso',
-            dados: rows
-        });
-        } catch (error) {
-            return response.status(500).json ({
-                sucesso: false,
-                mensagem: 'Erro na requisição',
-                dados: error.message
-            });
         }
     },
     async editarUsuarios (request, response) {
@@ -270,6 +236,45 @@ module.exports = {
             return response.status(500).json ({
                 sucesso: false,
                 mensagem: 'Erro na exclusão',
+                dados: error.message
+            });
+        }
+    },
+        async loginUsuarios (request, response) {
+        try {
+            const {email, senha} = request.query;
+
+            const sql = `
+                SELECT 
+                    usu_id, usu_nome 
+                FROM 
+                    USUARIOS
+                WHERE 
+                    usu_email = ? AND usu_senha_hash = ? AND usu_status = 1;
+            `;
+        
+            const values = [email, senha];
+
+            const [rows] = await db.query(sql, values);
+            const nItens = rows.length;
+
+        if (nItens < 1) {
+            return response.status(403).json ({
+                sucesso: false,
+                mensagem: 'Login e/ou senha inválida',
+                dados: null,
+            });
+        }
+
+        return response.status(200).json ({
+            sucesso: true,
+            mensagem: 'Login efetuado com sucesso',
+            dados: rows
+        });
+        } catch (error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensagem: 'Erro na requisição',
                 dados: error.message
             });
         }

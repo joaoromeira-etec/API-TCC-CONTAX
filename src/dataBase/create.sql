@@ -18,6 +18,7 @@ CREATE TABLE EMPRESAS (
     emp_municipio VARCHAR(100) NOT NULL,
     emp_telefone VARCHAR(15) NOT NULL,
     emp_email VARCHAR(100) NOT NULL,
+    emp_senha_hash VARCHAR(255) NOT NULL,
     emp_tipo BIT NOT NULL, -- 0-ME; 1-MEI
     emp_status BIT NOT NULL -- 0-Inativo; 1-Ativa
 );
