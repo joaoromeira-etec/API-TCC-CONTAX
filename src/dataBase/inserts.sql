@@ -83,3 +83,14 @@ INSERT INTO AUDITORIA (aud_id, usu_id, aud_acao, aud_tabela_afetada, aud_registr
 (4, 4, 0, 'REGIME', 4, '2023-04-01 00:00:00'),
 (5, 5, 1, 'PRAZOS', 5, '2023-05-01 00:00:00'),
 (6, 6, 2, 'SUPORTE', 6, '2023-06-01 00:00:00');
+
+-- Inserts para SUPORTE
+INSERT INTO SUPORTE
+(usu_id_solicitante, usu_id_responsavel, sup_assunto, sup_descricao, sup_status, sup_data_abertura, sup_data_suporte, sup_id_resp)
+VALUES
+(1, 2, 'Erro no login', 'Não estou conseguindo acessar o sistema com meu usuário.', 0, '2026-03-01 08:30:00', '2026-03-01 08:30:00', NULL),
+(3, 4, 'Falha ao cadastrar empresa', 'O sistema apresenta erro ao tentar salvar os dados da empresa.', 1, '2026-03-01 09:15:00', '2026-03-01 10:00:00', NULL),
+(2, 5, 'Atualização de dados', 'Preciso alterar o telefone cadastrado da empresa.', 2, '2026-02-28 14:00:00', '2026-02-28 15:30:00', NULL),
+(4, 2, 'Sistema lento', 'O sistema está demorando muito para carregar as páginas.', 1, '2026-03-02 11:20:00', '2026-03-02 12:00:00', NULL),
+-- Resposta vinculada ao chamado 1
+(2, 1, 'Re: Erro no login', 'Foi identificado que a senha estava incorreta. Solicitação resolvida.', 2, '2026-03-01 09:00:00', '2026-03-01 09:20:00', 1);

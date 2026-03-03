@@ -8,7 +8,8 @@ module.exports = {
             ` SELECT
                 emp_id, emp_nome_fantasia, emp_razao_social, emp_cnpj,
                 emp_endereco, emp_municipio, emp_telefone, emp_email, emp_tipo
-            FROM EMPRESAS;
+            FROM EMPRESAS
+            WHERE emp_status = 1;
             `;
 
             const [empresas] =  await db.query(sql);
@@ -60,17 +61,18 @@ module.exports = {
     async cadastrarEmpresas (request, response) {
         try {
 
-            const {nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo} = request.body;
+            const {nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, senha} = request.body;
             const emp_status = 1;
     
             const sql = `
-            INSERT INTO empresas
+            INSERT INTO EMPRESAS
                 (emp_nome_fantasia, emp_razao_social, emp_cnpj,
-                emp_endereco, emp_municipio, emp_telefone, emp_email, emp_tipo, emp_status)
+                emp_endereco, emp_municipio, emp_telefone,
+                emp_email, emp_tipo, emp_status, emp_senha_hash)
             VALUES 
-                (?, ?, ?, ?, ?, ?, ?, ?, ?);
-                `;
-            const values = [nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, emp_status];
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+`;
+            const values = [nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, emp_status, senha];
             
             const [result] = await db.query(sql, values);
 
@@ -83,7 +85,8 @@ module.exports = {
                 municipio,
                 telefone,
                 email,
-                tipo
+                tipo,
+                senha
             };
 
             return response.status(200).json (
@@ -107,22 +110,20 @@ module.exports = {
         try {
             // Parâmetros recebidos pelo corpo da requisição
             const {nome, razao_social, cnpj, endereco, municipio,
-                telefone, email, tipo, status} = request.body;
+            telefone, email, tipo, status, senha} = request.body;
 
             //Parâmetro recebido pela URL via params ex: /usuario/1
             const {id} = request.params;
 
             //instruções SQL
             const sql = `
-                UPDATE empresas SET 
-                    emp_nome_fantasia = ?, emp_razao_social = ?, emp_cnpj = ?,
-                    emp_endereco = ?, emp_municipio = ?, emp_telefone = ?,
-                    emp_email = ?, emp_tipo = ?, emp_status = ?
-                WHERE
-                    emp_id = ?;
+                UPDATE EMPRESAS SET 
+                    emp_nome_fantasia = ?, emp_razao_social = ?, emp_cnpj = ?, emp_endereco = ?, emp_municipio = ?, 
+                    emp_telefone = ?, emp_email = ?, emp_tipo = ?, emp_status = ?, emp_senha_hash = ?
+                WHERE emp_id = ?;
                 `;
                 //Preparo do array com dados que serão atualizados
-                const values = [nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, status, id];
+                const values = [nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, status, senha, id];
                 //execução e obtenção de confirmação da atualização realizada
                 const [result] = await db.query(sql, values);
 
