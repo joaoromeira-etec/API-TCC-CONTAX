@@ -11,7 +11,7 @@ router.post('/usuarios', usuariosController.cadastrarUsuarios);
 router.patch('/usuarios/:id', usuariosController.editarUsuarios);
 router.delete('/usuarios/:id', usuariosController.apagarUsuarios);
 router.delete('/usuarios/del/:id', usuariosController.ocultarUsuarios);
-router.get('/login', usuariosController.loginUsuarios);
+router.get('/usuarios/login', usuariosController.loginUsuarios);
 
 router.get('/empresas', empresasController.listarEmpresas);
 router.get('/empresas/listarEmps', empresasController.listarEmps);
@@ -19,7 +19,7 @@ router.post('/empresas', empresasController.cadastrarEmpresas);
 router.patch('/empresas/:id', empresasController.editarEmpresas);
 router.delete('/empresas/:id', empresasController.apagarEmpresas);
 router.delete('/empresas/del/:id', empresasController.ocultarEmpresas);
-router.get('/login', empresasController.loginEmpresas);
+router.get('/empresas/login', empresasController.loginEmpresas);
 
 router.get('/usuario_empresas', usuarioEmpresaController.listarUsuarioEmpresa);
 router.post('/usuario_empresas', usuarioEmpresaController.cadastrarUsuarioEmpresa);
