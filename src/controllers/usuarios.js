@@ -240,7 +240,7 @@ module.exports = {
             });
         }
     },
-        async loginUsuarios (request, response) {
+    async loginUsuarios (request, response) {
         try {
             const {email, senha} = request.query;
 
@@ -265,6 +265,11 @@ module.exports = {
                 dados: null,
             });
         }
+
+        const dados = rows.map(usuarios => ({
+            id: usuarios.usu_id,
+            nome: usuarios.usu_nome
+        }))
 
         return response.status(200).json ({
             sucesso: true,
