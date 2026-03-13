@@ -246,7 +246,7 @@ module.exports = {
 
             const sql = `
                 SELECT 
-                    usu_id, usu_nome 
+                    usu_id, usu_nome, usu_status 
                 FROM 
                     USUARIOS
                 WHERE 
@@ -268,13 +268,14 @@ module.exports = {
 
         const dados = rows.map(usuarios => ({
             id: usuarios.usu_id,
-            nome: usuarios.usu_nome
+            nome: usuarios.usu_nome,
+            status: usuarios.usu_status
         }))
 
         return response.status(200).json ({
             sucesso: true,
             mensagem: 'Login efetuado com sucesso',
-            dados: rows
+            dados
         });
         } catch (error) {
             return response.status(500).json ({
