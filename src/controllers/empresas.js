@@ -58,6 +58,9 @@ module.exports = {
             });
         }
     },
+    async listarCidades (request, response) {
+
+    },
     async cadastrarEmpresas (request, response) {
         try {
 
@@ -253,8 +256,7 @@ module.exports = {
             });
         }
     },
-
-       async loginEmpresas (request, response) {
+    async loginEmpresas (request, response) {
     try {
 
         const { email, senha } = request.query;
@@ -294,5 +296,5 @@ module.exports = {
             dados: error.message
         });
     }
-}
+    },
 }
