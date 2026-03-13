@@ -1,31 +1,54 @@
 const db = require('../dataBase/connection');
 
-module.exports = {  
-  async listarRegime(request, response) {    
+module.exports = {
+
+  async listarRegime(request, response) {
     try {
 
+      const { page = 1, limit = 5 } = request.query;
+
+      const pagina = parseInt(page);
+      const limite = parseInt(limit);
+      const offset = (pagina - 1) * limite;
+
+      const [total] = await db.query(`
+        SELECT COUNT(*) as total
+        FROM REGIME
+      `);
+
+      const totalRegistros = total[0].total;
+      const totalPaginas = Math.ceil(totalRegistros / limite);
+
       const sql = `
-    SELECT 
-        regi_id, 
-        regi_nome, 
-        regi_descricao, 
-        regi_limite_faturamento_anual, 
-        regi_tipo_empresa_permitida 
-    FROM regime
-    WHERE regi_status = 1; 
-`;
+        SELECT
+          regi_id,
+          regi_nome,
+          regi_descricao,
+          regi_limite_faturamento_anual,
+          regi_tipo_emp_permitida,
+          regi_status
+        FROM REGIME
+        LIMIT ?, ?
+      `;
 
-const [regime] = await db.query(sql);
+      const [regimes] = await db.query(sql, [offset, limite]);
 
-return response.status(200).json({
-    sucesso: true,
-    mensagem: 'Lista de regimes obtida com sucesso',
-    itens: regime.length,
-    dados: regime
-});
+      return response.status(200).json({
+        sucesso: true,
+        mensagem: "Lista de regimes obtida com sucesso",
+        paginacao: {
+          pagina,
+          limite,
+          total_registros: totalRegistros,
+          total_paginas: totalPaginas
+        },
+        itens: regimes.length,
+        dados: regimes
+      });
+
     } catch (error) {
       return response.status(500).json({
-        SUCESSO: false,
+        sucesso: false,
         mensagem: `Erro ao obter lista de regimes: ${error.message}`,
         dados: null
       });
@@ -33,56 +56,45 @@ return response.status(200).json({
   },
 
 
-
- 
-  async cadastrarRegime(request, response) {    
+  async cadastrarRegime(request, response) {
     try {
 
-      // Dados do corpo da requisição
-const {
-    regi_nome,
-    regi_descricao,
-    regi_limite_faturamento_anual,
-    regi_tipo_emp_permitida
-} = request.body;
+      const {
+        regi_nome,
+        regi_descricao,
+        regi_limite_faturamento_anual,
+        regi_tipo_emp_permitida,
+        regi_status
+      } = request.body;
 
-// Instrução SQL
-const sql = `
-    INSERT INTO REGIME
-        (regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida)
-    VALUES
-        (?, ?, ?, ?);
-`;
+      const sql = `
+        INSERT INTO REGIME
+        (regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida, regi_status)
+        VALUES (?, ?, ?, ?, ?)
+      `;
 
-// Valores
-const values = [
-    regi_nome,
-    regi_descricao,
-    regi_limite_faturamento_anual,
-    regi_tipo_emp_permitida
-];
+      const values = [
+        regi_nome,
+        regi_descricao,
+        regi_limite_faturamento_anual,
+        regi_tipo_emp_permitida,
+        regi_status
+      ];
 
-// Execução da query
-const [result] = await db.query(sql, values);
+      const [result] = await db.query(sql, values);
 
-// Identificação do ID inserido
-const dados = {
-    id: result.insertId,
-    regi_nome,
-    regi_descricao,
-    regi_limite_faturamento_anual,
-    regi_tipo_emp_permitida
-};
-
-return response.status(200).json({
-    SUCESSO: true,
-    mensagem: 'Regime cadastrado com sucesso',
-    dados
-});
+      return response.status(200).json({
+        sucesso: true,
+        mensagem: "Regime cadastrado com sucesso",
+        dados: {
+          id: result.insertId,
+          ...request.body
+        }
+      });
 
     } catch (error) {
       return response.status(500).json({
-        SUCESSO: false,
+        sucesso: false,
         mensagem: `Erro ao cadastrar regime: ${error.message}`,
         dados: null
       });
@@ -90,146 +102,105 @@ return response.status(200).json({
   },
 
 
-
-
- async editarRegime(request, response) {
+  async editarRegime(request, response) {
     try {
 
-        // Parâmetros do corpo da requisição
-        const { regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida } = request.body;
+      const {
+        regi_nome,
+        regi_descricao,
+        regi_limite_faturamento_anual,
+        regi_tipo_emp_permitida,
+        regi_status
+      } = request.body;
 
-        // Parâmetro da rota via URL
-        const { id } = request.params;
-
-        // Instrução SQL
-        const sql = `
-            UPDATE REGIME SET
-                regi_nome = ?, 
-                regi_descricao = ?, 
-                regi_limite_faturamento_anual = ?, 
-                regi_tipo_emp_permitida = ?
-            WHERE
-                regi_id = ?;
-        `;
-
-        // Valores em array
-        const values = [regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida, id];
-
-        // Execução da query
-        const [result] = await db.query(sql, values);
-
-        if (result.affectedRows === 0) {
-            return response.status(404).json({
-                sucesso: false,
-                mensagem: `Regime com ID ${id} não encontrado para atualização`,
-                dados: null
-            });
-        }
-
-        const dados = {
-            id,
-            regi_nome,
-            regi_descricao,
-            regi_limite_faturamento_anual,
-            regi_tipo_emp_permitida
-        };
-
-        return response.status(200).json({
-            sucesso: true,
-            mensagem: `Atualização do regime ${id} realizada com sucesso`,
-            dados
-        });
-
-    } catch (error) {
-        return response.status(500).json({
-            sucesso: false,
-            mensagem: 'Erro na requisição.',
-            dados: error.message
-        });
-    }
-},
-
-  async apagarRegime(request, response) {
-    try {
       const { id } = request.params;
 
-      const sql = `DELETE FROM REGIME WHERE regi_id = ?;`;
-      const [result] = await db.query(sql, [id]);
+      const sql = `
+        UPDATE REGIME
+        SET
+          regi_nome = ?,
+          regi_descricao = ?,
+          regi_limite_faturamento_anual = ?,
+          regi_tipo_emp_permitida = ?,
+          regi_status = ?
+        WHERE regi_id = ?
+      `;
 
-      if (result.affectedRows === 0) {
-        return response.status(404).json({
-          sucesso: false,
-          mensagem: `Regime com ID ${id} não encontrado para exclusão.`,
-          dados: null
-        });
-      }
+      const values = [
+        regi_nome,
+        regi_descricao,
+        regi_limite_faturamento_anual,
+        regi_tipo_emp_permitida,
+        regi_status,
+        id
+      ];
+
+      await db.query(sql, values);
 
       return response.status(200).json({
         sucesso: true,
-        mensagem: `Regime com ID ${id} excluído com sucesso.`,
-        dados: null
+        mensagem: "Regime atualizado com sucesso"
       });
 
     } catch (error) {
       return response.status(500).json({
         sucesso: false,
-        mensagem: `Erro ao excluir regime: ${error.message}`,
-        dados: null
+        mensagem: `Erro ao atualizar regime: ${error.message}`
       });
     }
   },
 
-  // Exclusão lógica (soft delete)
-  async ocultarRegime(request, response) {
+
+  async apagarRegime(request, response) {
     try {
+
       const { id } = request.params;
 
-      // Verificar se existe
-      const sqlBusca = `SELECT regi_id, regi_status FROM REGIME WHERE regi_id = ?;`;
-      const [rows] = await db.query(sqlBusca, [id]);
+      const sql = `
+        DELETE FROM REGIME
+        WHERE regi_id = ?
+      `;
 
-      if (rows.length === 0) {
-        return response.status(404).json({
-          sucesso: false,
-          mensagem: `Regime com ID ${id} não encontrado.`,
-          dados: null
-        });
-      }
-
-      if (rows[0].regi_status === 0) {
-        return response.status(400).json({
-          sucesso: false,
-          mensagem: `Regime com ID ${id} já está inativo.`,
-          dados: null
-        });
-      }
-
-      // Atualizar status para inativo
-      const sqlOcultar = `UPDATE REGIME SET regi_status = 0 WHERE regi_id = ?;`;
-      const [result] = await db.query(sqlOcultar, [id]);
-
-      if (result.affectedRows === 0) {
-        return response.status(404).json({
-          sucesso: false,
-          mensagem: `Não foi possível inativar o regime com ID ${id}.`,
-          dados: null
-        });
-      }
+      await db.query(sql, [id]);
 
       return response.status(200).json({
         sucesso: true,
-        mensagem: `Regime com ID ${id} inativado com sucesso.`,
-        dados: null
+        mensagem: "Regime excluído com sucesso"
       });
 
     } catch (error) {
       return response.status(500).json({
         sucesso: false,
-        mensagem: `Erro ao inativar regime: ${error.message}`,
-        dados: null
+        mensagem: `Erro ao excluir regime: ${error.message}`
+      });
+    }
+  },
+
+
+  async ocultarRegime(request, response) {
+    try {
+
+      const { id } = request.params;
+
+      const sql = `
+        UPDATE REGIME
+        SET regi_status = 0
+        WHERE regi_id = ?
+      `;
+
+      await db.query(sql, [id]);
+
+      return response.status(200).json({
+        sucesso: true,
+        mensagem: "Regime ocultado com sucesso"
+      });
+
+    } catch (error) {
+      return response.status(500).json({
+        sucesso: false,
+        mensagem: `Erro ao ocultar regime: ${error.message}`
       });
     }
   }
+
 };
-
-

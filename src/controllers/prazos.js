@@ -1,30 +1,56 @@
 const db = require('../dataBase/connection');
 
-module.exports = {  
-  async listarPrazos(request, response) {    
+module.exports = {
+
+  async listarPrazos(request, response) {
     try {
 
+      const { page = 1, limit = 5 } = request.query;
+
+      const pagina = parseInt(page);
+      const limite = parseInt(limit);
+      const offset = (pagina - 1) * limite;
+
+      // buscar total de registros
+      const [total] = await db.query(`
+        SELECT COUNT(*) as total
+        FROM prazos
+      `);
+
+      const totalRegistros = total[0].total;
+      const totalPaginas = Math.ceil(totalRegistros / limite);
+
       const sql = `
-    SELECT 
-        praz_id, 
-        emp_id, 
-        praz_descricao, 
-        praz_data_vencimento, 
-        praz_status
-    FROM prazos;
-`;
+        SELECT 
+            praz_id,
+            emp_id,
+            praz_descricao,
+            praz_data_vencimento,
+            praz_status
+        FROM prazos
+        LIMIT ?, ?
+      `;
 
-const [prazos] = await db.query(sql);
+      const [prazos] = await db.query(sql, [offset, limite]);
 
-return response.status(200).json({
-    sucesso: true,
-    mensagem: 'Lista de prazos obtida com sucesso',
-    itens: prazos.length,
-    dados: prazos
-});
+      return response.status(200).json({
+        sucesso: true,
+        mensagem: "Lista de prazos obtida com sucesso",
+
+        paginacao: {
+          pagina: pagina,
+          limite: limite,
+          total_registros: totalRegistros,
+          total_paginas: totalPaginas
+        },
+
+        itens: prazos.length,
+        dados: prazos
+      });
+
     } catch (error) {
       return response.status(500).json({
-        SUCESSO: false,
+        sucesso: false,
         mensagem: `Erro ao obter lista de prazos: ${error.message}`,
         dados: null
       });
@@ -32,46 +58,39 @@ return response.status(200).json({
   },
 
 
- 
-  async cadastrarPrazos(request, response) {    
+  async cadastrarPrazos(request, response) {
     try {
 
-    // Dados do corpo da requisição
-const { emp_id, praz_descricao, praz_data_vencimento, praz_status } = request.body;
+      const { emp_id, praz_descricao, praz_data_vencimento, praz_status } = request.body;
 
-// Instrução SQL
-const sql = `
-    INSERT INTO PRAZOS 
+      const sql = `
+        INSERT INTO PRAZOS 
         (emp_id, praz_descricao, praz_data_vencimento, praz_status)
-    VALUES
-        (?, ?, ?, ?);
-`;
+        VALUES (?, ?, ?, ?)
+      `;
 
-// Valores
-const values = [
-    emp_id,
-    praz_descricao,
-    praz_data_vencimento,
-    praz_status
-];
+      const values = [
+        emp_id,
+        praz_descricao,
+        praz_data_vencimento,
+        praz_status
+      ];
 
-// Execução da query
-const [result] = await db.query(sql, values);
+      const [result] = await db.query(sql, values);
 
-// Identificação do ID inserido
-const dados = {
-    id: result.insertId,
-    emp_id,
-    praz_descricao,
-    praz_data_vencimento,
-    praz_status
-};
+      const dados = {
+        id: result.insertId,
+        emp_id,
+        praz_descricao,
+        praz_data_vencimento,
+        praz_status
+      };
 
-return response.status(200).json({
-    SUCESSO: true,
-    mensagem: 'Prazo cadastrado com sucesso',
-    dados
-});
+      return response.status(200).json({
+        SUCESSO: true,
+        mensagem: 'Prazo cadastrado com sucesso',
+        dados
+      });
 
     } catch (error) {
       return response.status(500).json({
@@ -83,135 +102,133 @@ return response.status(200).json({
   },
 
 
-
-
-
-
   async editarPrazos(request, response) {
     try {
-        const { praz_descricao, praz_data_vencimento, praz_status } = request.body;
-        const { id } = request.params;
 
-        const sql = `
-            UPDATE PRAZOS 
-            SET praz_descricao = ?, praz_data_vencimento = ?, praz_status = ? 
-            WHERE praz_id = ?;
-        `;
+      const { praz_descricao, praz_data_vencimento, praz_status } = request.body;
+      const { id } = request.params;
 
-        const values = [praz_descricao, praz_data_vencimento, praz_status, id];
-        const [result] = await db.query(sql, values);
+      const sql = `
+        UPDATE PRAZOS 
+        SET praz_descricao = ?, praz_data_vencimento = ?, praz_status = ?
+        WHERE praz_id = ?
+      `;
 
-        if (result.affectedRows === 0) {
-            return response.status(404).json({
-                SUCESSO: false,
-                mensagem: 'Prazo não encontrado',
-                dados: null
-            });
-        }
+      const values = [praz_descricao, praz_data_vencimento, praz_status, id];
 
-        return response.status(200).json({
-            SUCESSO: true,
-            mensagem: 'Prazo atualizado com sucesso',
-            dados: { id, praz_descricao, praz_data_vencimento, praz_status }
+      const [result] = await db.query(sql, values);
+
+      if (result.affectedRows === 0) {
+        return response.status(404).json({
+          SUCESSO: false,
+          mensagem: 'Prazo não encontrado',
+          dados: null
         });
+      }
+
+      return response.status(200).json({
+        SUCESSO: true,
+        mensagem: 'Prazo atualizado com sucesso',
+        dados: { id, praz_descricao, praz_data_vencimento, praz_status }
+      });
 
     } catch (error) {
-        return response.status(500).json({
-            SUCESSO: false,
-            mensagem: `Erro ao atualizar prazo: ${error.message}`,
-            dados: null
+      return response.status(500).json({
+        SUCESSO: false,
+        mensagem: `Erro ao atualizar prazo: ${error.message}`,
+        dados: null
+      });
+    }
+  },
+
+
+  async apagarPrazos(request, response) {
+    try {
+
+      const { id } = request.params;
+
+      const sql = `
+        UPDATE PRAZOS
+        SET praz_status = 2
+        WHERE praz_id = ?
+      `;
+
+      const [result] = await db.query(sql, [id]);
+
+      if (result.affectedRows === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: `Prazo com ID ${id} não encontrado`,
+          dados: null
         });
-    }
-},
+      }
 
+      return response.status(200).json({
+        sucesso: true,
+        mensagem: `Prazo ${id} marcado como excluído`,
+        dados: { id, status: 2 }
+      });
 
-
-
-
-  async apagarPrazos(request, response) {    
-  try {
-    const { id } = request.params;
-
-    const sql = `
-      UPDATE PRAZOS
-      SET praz_status = 2
-      WHERE praz_id = ?;
-    `;
-
-    const [result] = await db.query(sql, [id]);
-
-    if (result.affectedRows === 0) {
-      return response.status(404).json({
+    } catch (error) {
+      return response.status(500).json({
         sucesso: false,
-        mensagem: `Prazo com ID ${id} não encontrado`,
+        mensagem: `Erro ao excluir prazo: ${error.message}`,
         dados: null
       });
     }
+  },
 
-    return response.status(200).json({
-      sucesso: true,
-      mensagem: `Prazo ${id} marcado como excluído`,
-      dados: { id, status: 2 }
-    });
 
-  } catch (error) {
-    return response.status(500).json({
-      sucesso: false,
-      mensagem: `Erro ao excluir prazo: ${error.message}`,
-      dados: null
-    });
+  async ocultarPrazos(request, response) {
+    try {
+
+      const { id } = request.params;
+
+      const sqlBusca = `
+        SELECT praz_id, praz_status
+        FROM PRAZOS
+        WHERE praz_id = ?
+      `;
+
+      const [rows] = await db.query(sqlBusca, [id]);
+
+      if (rows.length === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: `Prazo com ID ${id} não encontrado`,
+          dados: null
+        });
+      }
+
+      if (rows[0].praz_status === 2) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: `Prazo com ID ${id} já está marcado como excluído`,
+          dados: null
+        });
+      }
+
+      const sqlOcultar = `
+        UPDATE PRAZOS
+        SET praz_status = 2
+        WHERE praz_id = ?
+      `;
+
+      await db.query(sqlOcultar, [id]);
+
+      return response.status(200).json({
+        sucesso: true,
+        mensagem: `Prazo ${id} marcado como excluído com sucesso`,
+        dados: { id, status: 2 }
+      });
+
+    } catch (error) {
+      return response.status(500).json({
+        sucesso: false,
+        mensagem: `Erro ao ocultar prazo: ${error.message}`,
+        dados: null
+      });
+    }
   }
-},
 
-async ocultarPrazos(request, response) {    
-  try {
-    const { id } = request.params;
-
-    
-    const sqlBusca = `
-      SELECT praz_id, praz_status
-      FROM PRAZOS
-      WHERE praz_id = ?;
-    `;
-    const [rows] = await db.query(sqlBusca, [id]);
-
-    if (rows.length === 0) {
-      return response.status(404).json({
-        sucesso: false,
-        mensagem: `Prazo com ID ${id} não encontrado`,
-        dados: null
-      });
-    }
-
-    
-    if (rows[0].praz_status === 2) {
-      return response.status(400).json({
-        sucesso: false,
-        mensagem: `Prazo com ID ${id} já está marcado como excluído`,
-        dados: null
-      });
-    }
-
-    
-    const sqlOcultar = `
-      UPDATE PRAZOS
-      SET praz_status = 2
-      WHERE praz_id = ?;
-    `;
-    const [result] = await db.query(sqlOcultar, [id]);
-
-    return response.status(200).json({
-      sucesso: true,
-      mensagem: `Prazo ${id} marcado como excluído com sucesso`,
-      dados: { id, status: 2 }
-    });
-
-  } catch (error) {
-    return response.status(500).json({
-      sucesso: false,
-      mensagem: `Erro ao ocultar prazo: ${error.message}`,
-      dados: null
-    });
-  }
-},
 };
