@@ -263,7 +263,7 @@ module.exports = {
 
         const sql = ` 
             SELECT 
-                emp_id, emp_razao_social, emp_cnpj
+                emp_id, emp_razao_social, emp_cnpj, emp_tipo
             FROM 
                 EMPRESAS
             WHERE 
@@ -283,10 +283,17 @@ module.exports = {
             });
         }
 
+        const dados = rows.map(empresas => ({
+            id: empresas.emp_id,
+            razao_social: empresas.emp_razao_social,
+            cnpj: empresas.emp_cnpj,
+            tipo: empresas.emp_tipo
+        }))
+
         return response.status(200).json({
             sucesso: true,
             mensagem: 'Login efetuado com sucesso',
-            dados: rows[0]
+            dados
         });
 
     } catch (error) {

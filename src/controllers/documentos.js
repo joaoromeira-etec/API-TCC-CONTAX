@@ -3,23 +3,30 @@ const db = require('../dataBase/connection');
 module.exports = {
     async listarDocumentos (request, response) {
         try{
+            const { nome } = request.query
 
+            const doc_arquivo_nome = nome ? `%${nome}%` : `%`;
             const sql = `
             SELECT 
                 doc_id, usu_id, emp_id, tpd_id, 
                 doc_arquivo_nome, doc_data_emissao, doc_valor 
-            FROM DOCUMENTOS
-            WHERE doc_status = 1;
+            FROM 
+                DOCUMENTOS
+            WHERE 
+                doc_arquivo_nome like ? AND doc_status = 1;
             `;
 
-            const [documentos] =  await db.query(sql);
+            const values = [doc_arquivo_nome]
+
+            const [rows] =  await db.query(sql, values);
+            const nItens = rows.length
 
             return response.status(200).json(
                 {
                     sucesso: true,
                     mensagem: 'Documentos listados com sucesso',
-                    itens: documentos.length,
-                    dados: documentos
+                    nItens,
+                    dados: rows
                 }
             );
         }        catch (error) {
