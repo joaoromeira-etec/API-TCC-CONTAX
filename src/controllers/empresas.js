@@ -58,8 +58,9 @@ module.exports = {
             });
         }
     },
-    async listarCidades (request, response) {
-
+    async listarMunicipios (request, response) {
+        const {id, nome_fantasia, razao_social, cnpj,
+               endereco, telefone, email, tipo, status = 1} = request.query;
     },
     async cadastrarEmpresas (request, response) {
         try {
