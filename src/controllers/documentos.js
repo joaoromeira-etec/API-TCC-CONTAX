@@ -3,9 +3,19 @@ const db = require('../dataBase/connection');
 module.exports = {
     async listarDocumentos (request, response) {
         try{
-            const { nome } = request.query
+            const { nome, valor, page = 1, limit = 5 } = request.query
+
+            if (!nome) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'O nome é obrigatório para listar os documentos.'
+                })
+            }
+
+            const offset = (parseInt(page) - 1) * parseInt(limit);
 
             const doc_arquivo_nome = nome ? `%${nome}%` : `%`;
+
             const sql = `
             SELECT 
                 doc_id, usu_id, emp_id, tpd_id, 
@@ -13,20 +23,30 @@ module.exports = {
             FROM 
                 DOCUMENTOS
             WHERE 
-                doc_arquivo_nome like ? AND doc_status = 1;
+                doc_arquivo_nome like ? AND doc_status = 1
+            LIMIT ?, ?;
             `;
 
-            const values = [doc_arquivo_nome]
+            const values = [doc_arquivo_nome.toUpperCase(), offset, parseInt(limit)];
 
             const [rows] =  await db.query(sql, values);
-            const nItens = rows.length
+
+            const dados = rows.map(documentos =>({
+                nome: documentos.doc_arquivo_nome,
+                data_emissao: doc_data_emissao,
+                valor: doc_valor,
+            }))
 
             return response.status(200).json(
                 {
                     sucesso: true,
-                    mensagem: 'Documentos listados com sucesso',
-                    nItens,
-                    dados: rows
+                    mensagem: dados.lengt > 0
+                        ? 'Documentos listados com sucesso'
+                        : 'Nenhum documento foi encontrado com esses critérios.',
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    nItens: rows.length,
+                    dados
                 }
             );
         }        catch (error) {
