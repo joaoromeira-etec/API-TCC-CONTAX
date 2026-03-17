@@ -3,23 +3,30 @@ const db = require('../dataBase/connection');
 module.exports = {
     async listarTipoDocumentos (request, response) {
         try{
+            const { descricao } = request.query
 
+            const tpd_descricao = descricao ? `%${descricao}` : `%`;
             const sql = `
             SELECT 
                 tpd_id, tpd_descricao 
-            FROM TIPO_DOCUMENTOS
-            WHERE tpd_status = 1;
+            FROM 
+                TIPO_DOCUMENTOS
+            WHERE 
+                tpd_status = 1 and tpd_descricao like ?;
             `;
 
-            const [tipoDocumentos] =  await db.query(sql);
+            const values = [tpd_descricao]
+
+            const [rows] =  await db.query(sql, values);
+            const nItens = rows.length
 
             
             return response.status(200).json(
                 {
                     sucesso: true,
                     mensagem: 'Tipos dos documentos listados com sucesso',
-                    itens: tipoDocumentos.length,
-                    dados: tipoDocumentos
+                    nItens,
+                    dados: rows
                 }
 
 

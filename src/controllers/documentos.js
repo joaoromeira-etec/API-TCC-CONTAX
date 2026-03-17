@@ -3,9 +3,12 @@ const db = require('../dataBase/connection');
 module.exports = {
     async listarDocumentos (request, response) {
         try{
-            const { nome } = request.query
+            const { nome, page = 1, limit = 5 } = request.query
+
+            const offset = (parseInt(page) - 1) * parseInt(limit);
 
             const doc_arquivo_nome = nome ? `%${nome}%` : `%`;
+
             const sql = `
             SELECT 
                 doc_id, usu_id, emp_id, tpd_id, 
@@ -13,19 +16,21 @@ module.exports = {
             FROM 
                 DOCUMENTOS
             WHERE 
-                doc_arquivo_nome like ? AND doc_status = 1;
+                doc_arquivo_nome like ? AND doc_status = 1
+            LIMIT ?, ?;
             `;
 
-            const values = [doc_arquivo_nome]
+            const values = [doc_arquivo_nome, offset, parseInt(limit)];
 
             const [rows] =  await db.query(sql, values);
-            const nItens = rows.length
 
             return response.status(200).json(
                 {
                     sucesso: true,
                     mensagem: 'Documentos listados com sucesso',
-                    nItens,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    nItens: rows.length,
                     dados: rows
                 }
             );
