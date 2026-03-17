@@ -3,14 +3,7 @@ const db = require('../dataBase/connection');
 module.exports = {
     async listarDocumentos (request, response) {
         try{
-            const { nome, valor, page = 1, limit = 5 } = request.query
-
-            if (!nome) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'O nome é obrigatório para listar os documentos.'
-                })
-            }
+            const { nome, page = 1, limit = 5 } = request.query
 
             const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -27,26 +20,18 @@ module.exports = {
             LIMIT ?, ?;
             `;
 
-            const values = [doc_arquivo_nome.toUpperCase(), offset, parseInt(limit)];
+            const values = [doc_arquivo_nome, offset, parseInt(limit)];
 
             const [rows] =  await db.query(sql, values);
-
-            const dados = rows.map(documentos =>({
-                nome: documentos.doc_arquivo_nome,
-                data_emissao: doc_data_emissao,
-                valor: doc_valor,
-            }))
 
             return response.status(200).json(
                 {
                     sucesso: true,
-                    mensagem: dados.lengt > 0
-                        ? 'Documentos listados com sucesso'
-                        : 'Nenhum documento foi encontrado com esses critérios.',
+                    mensagem: 'Documentos listados com sucesso',
                     page: parseInt(page),
                     limit: parseInt(limit),
                     nItens: rows.length,
-                    dados
+                    dados: rows
                 }
             );
         }        catch (error) {
