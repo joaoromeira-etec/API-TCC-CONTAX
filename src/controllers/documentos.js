@@ -1,50 +1,102 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-    async listarDocumentos (request, response) {
-        try{
-            const { nome, page = 1, limit = 5 } = request.query
+async listarDocumentos(request, response) {
+    try {
+        const {
+            id,
+            nome,
+            tpd_id,
+            emp_id,
+            valor,
+            page = 1,
+            limit = 5
+        } = request.query;
 
-            const offset = (parseInt(page) - 1) * parseInt(limit);
+        const offset = (parseInt(page) - 1) * parseInt(limit);
 
-            const doc_arquivo_nome = nome ? `%${nome}%` : `%`;
+        const [[{ valor_max }]] = await db.query(`
+            SELECT MAX(doc_valor) AS valor_max FROM DOCUMENTOS
+        `);
 
-            const sql = `
+        const valorLimite = parseFloat(valor ?? valor_max);
+
+        let sql = `
             SELECT 
-                doc_id, usu_id, emp_id, tpd_id, 
-                doc_arquivo_nome, doc_data_emissao, doc_valor 
-            FROM 
-                DOCUMENTOS
-            WHERE 
-                doc_arquivo_nome like ? AND doc_status = 1
-            LIMIT ?, ?;
-            `;
+                doc_id, usu_id, emp_id, tpd_id,
+                doc_arquivo_nome, doc_data_emissao, doc_valor
+            FROM DOCUMENTOS
+            WHERE doc_status = 1
+            AND doc_arquivo_nome LIKE ?
+            ${tpd_id ? 'AND tpd_id = ?' : ''}
+            ${emp_id ? 'AND emp_id = ?' : ''}
+            ${id ? 'AND doc_id = ?' : ''}
+            AND doc_valor <= ?
+            LIMIT ?, ?
+        `;
 
-            const values = [doc_arquivo_nome, offset, parseInt(limit)];
+        const values = (tpd_id || emp_id || id)
+            ? [
+                `%${nome ?? ''}%`,
+                ...(tpd_id ? [parseInt(tpd_id)] : []),
+                ...(emp_id ? [parseInt(emp_id)] : []),
+                ...(id ? [parseInt(id)] : []),
+                valorLimite,
+                offset,
+                parseInt(limit)
+            ]
+            : [
+                `%${nome ?? ''}%`,
+                valorLimite,
+                offset,
+                parseInt(limit)
+            ];
 
-            const [rows] =  await db.query(sql, values);
+        const [rows] = await db.query(sql, values);
 
-            return response.status(200).json(
-                {
-                    sucesso: true,
-                    mensagem: 'Documentos listados com sucesso',
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    nItens: rows.length,
-                    dados: rows
-                }
-            );
-        }        catch (error) {
-            return response.status(500).json(
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao listar os documentos: ${error.message}`,
-                    dados: null
-                }
-            );
-        }
-    },
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM DOCUMENTOS
+            WHERE doc_status = 1
+            AND doc_arquivo_nome LIKE ?
+            ${tpd_id ? 'AND tpd_id = ?' : ''}
+            ${emp_id ? 'AND emp_id = ?' : ''}
+            ${id ? 'AND doc_id = ?' : ''}
+            AND doc_valor <= ?
+        `;
 
+        const countValues = (tpd_id || emp_id || id)
+            ? [
+                `%${nome ?? ''}%`,
+                ...(tpd_id ? [parseInt(tpd_id)] : []),
+                ...(emp_id ? [parseInt(emp_id)] : []),
+                ...(id ? [parseInt(id)] : []),
+                valorLimite
+            ]
+            : [
+                `%${nome ?? ''}%`,
+                valorLimite
+            ];
+
+        const [[{ total }]] = await db.query(countQuery, countValues);
+
+        response.setHeader('X-Total-Count', total);
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Lista de Documentos',
+            nItens: rows.length,
+            dados: rows
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro ao listar os documentos: ${error.message}`,
+            dados: null
+        });
+    }
+},
 
      async cadastrarDocumentos (request, response) {
         try{
