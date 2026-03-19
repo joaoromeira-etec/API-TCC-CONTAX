@@ -13,13 +13,24 @@ async listarDocumentos(request, response) {
             limit = 5
         } = request.query;
 
+        const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
+        const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;;
+
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
         const [[{ valor_max }]] = await db.query(`
             SELECT MAX(doc_valor) AS valor_max FROM DOCUMENTOS
         `);
-
         const valorLimite = parseFloat(valor ?? valor_max);
+
+
+        const [[{ id_min, id_max }]] = await db.query(`
+            SELECT MIN(doc_id) AS id_min, MAX(doc_id) AS id_max FROM DOCUMENTOS
+        `);
+
+        const idMinLimite = idMin ? parseInt(idMin) : (id_min ?? 0);
+        const idMaxLimite = idMax ? parseInt(idMax) : (id_max ?? 999999);
+
 
         let sql = `
             SELECT 
@@ -30,27 +41,20 @@ async listarDocumentos(request, response) {
             AND doc_arquivo_nome LIKE ?
             ${tpd_id ? 'AND tpd_id = ?' : ''}
             ${emp_id ? 'AND emp_id = ?' : ''}
-            ${id ? 'AND doc_id = ?' : ''}
+            ${id ? 'AND doc_id = ?' : 'AND doc_id BETWEEN ? AND ?'}
             AND doc_valor <= ?
             LIMIT ?, ?
         `;
 
-        const values = (tpd_id || emp_id || id)
-            ? [
-                `%${nome ?? ''}%`,
-                ...(tpd_id ? [parseInt(tpd_id)] : []),
-                ...(emp_id ? [parseInt(emp_id)] : []),
-                ...(id ? [parseInt(id)] : []),
-                valorLimite,
-                offset,
-                parseInt(limit)
-            ]
-            : [
-                `%${nome ?? ''}%`,
-                valorLimite,
-                offset,
-                parseInt(limit)
-            ];
+        const values = [
+    `%${nome ?? ''}%`,
+    ...(tpd_id ? [parseInt(tpd_id)] : []),
+    ...(emp_id ? [parseInt(emp_id)] : []),
+    ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+    valorLimite,
+    offset,
+    parseInt(limit)
+];
 
         const [rows] = await db.query(sql, values);
 
@@ -61,22 +65,17 @@ async listarDocumentos(request, response) {
             AND doc_arquivo_nome LIKE ?
             ${tpd_id ? 'AND tpd_id = ?' : ''}
             ${emp_id ? 'AND emp_id = ?' : ''}
-            ${id ? 'AND doc_id = ?' : ''}
+            ${id ? 'AND doc_id = ?' : 'AND doc_id BETWEEN ? AND ?'}
             AND doc_valor <= ?
         `;
 
-        const countValues = (tpd_id || emp_id || id)
-            ? [
-                `%${nome ?? ''}%`,
-                ...(tpd_id ? [parseInt(tpd_id)] : []),
-                ...(emp_id ? [parseInt(emp_id)] : []),
-                ...(id ? [parseInt(id)] : []),
-                valorLimite
-            ]
-            : [
-                `%${nome ?? ''}%`,
-                valorLimite
-            ];
+       const countValues = [
+    `%${nome ?? ''}%`,
+    ...(tpd_id ? [parseInt(tpd_id)] : []),
+    ...(emp_id ? [parseInt(emp_id)] : []),
+    ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+    valorLimite
+];
 
         const [[{ total }]] = await db.query(countQuery, countValues);
 

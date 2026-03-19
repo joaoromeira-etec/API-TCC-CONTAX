@@ -1,46 +1,79 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-    async listarTipoDocumentos (request, response) {
-        try{
-            const { descricao } = request.query
+async listarTipoDocumentos(request, response) {
+    try {
+        const { descricao, id, page = 1, limit = 5 } = request.query;
 
-            const tpd_descricao = descricao ? `%${descricao}` : `%`;
-            const sql = `
+        const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
+        const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const [[{ id_min, id_max }]] = await db.query(`
+            SELECT MIN(tpd_id) AS id_min, MAX(tpd_id) AS id_max 
+            FROM TIPO_DOCUMENTOS
+        `);
+
+        const idMinLimite = idMin ? parseInt(idMin) : (id_min ?? 0);
+        const idMaxLimite = idMax ? parseInt(idMax) : (id_max ?? 999999);
+
+        const tpd_descricao = descricao ? `%${descricao}%` : `%`;
+
+        let sql = `
             SELECT 
                 tpd_id, tpd_descricao 
             FROM 
                 TIPO_DOCUMENTOS
             WHERE 
-                tpd_status = 1 and tpd_descricao like ?;
-            `;
+                tpd_status = 1 
+                AND tpd_descricao LIKE ?
+                ${id ? 'AND tpd_id = ?' : 'AND tpd_id BETWEEN ? AND ?'}
+            LIMIT ?, ?
+        `;
 
-            const values = [tpd_descricao]
+        const values = [
+            tpd_descricao,
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+            offset,
+            parseInt(limit)
+        ];
 
-            const [rows] =  await db.query(sql, values);
-            const nItens = rows.length
+        const [rows] = await db.query(sql, values);
 
-            
-            return response.status(200).json(
-                {
-                    sucesso: true,
-                    mensagem: 'Tipos dos documentos listados com sucesso',
-                    nItens,
-                    dados: rows
-                }
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM TIPO_DOCUMENTOS
+            WHERE 
+                tpd_status = 1
+                AND tpd_descricao LIKE ?
+                ${id ? 'AND tpd_id = ?' : 'AND tpd_id BETWEEN ? AND ?'}
+        `;
 
+        const countValues = [
+            tpd_descricao,
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
+        ];
 
-            );
-        }        catch (error) {
-            return response.status(500).json(
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao listar os tipos dos documentos: ${error.message}`,
-                    dados: null
-                }
-            );
-        }
-    },
+        const [[{ total }]] = await db.query(countQuery, countValues);
+
+        response.setHeader('X-Total-Count', total);
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Tipos dos documentos listados com sucesso',
+            nItens: rows.length,
+            dados: rows
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro ao listar os tipos dos documentos: ${error.message}`,
+            dados: null
+        });
+    }
+},
 
 
      async cadastrarTipoDocumentos (request, response) {
