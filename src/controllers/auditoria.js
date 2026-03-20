@@ -66,6 +66,52 @@ async cadastrarAuditoria(request, response) {
       aud_data_acao
     } = request.body;
 
+    if (!usu_id || !aud_acao || !aud_tabela_afetada || !aud_data_acao) {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: "Campos obrigatórios não informados",
+        dados: null
+      });
+    }
+
+    if (isNaN(usu_id)) {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: "usu_id deve ser numérico",
+        dados: null
+      });
+    }
+
+    if (typeof aud_acao !== "string") {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: "aud_acao deve ser texto",
+        dados: null
+      });
+    }
+
+    const data = new Date(aud_data_acao);
+    if (isNaN(data.getTime())) {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: "Data inválida",
+        dados: null
+      });
+    }
+
+    const [usuario] = await db.query(
+      "SELECT usu_id FROM USUARIOS WHERE usu_id = ?",
+      [usu_id]
+    );
+
+    if (usuario.length === 0) {
+      return response.status(404).json({
+        sucesso: false,
+        mensagem: "Usuário não encontrado",
+        dados: null
+      });
+    }
+
     const sql = `
       INSERT INTO AUDITORIA
       (usu_id, aud_acao, aud_tabela_afetada, aud_registro_afetado, aud_data_acao)
@@ -116,6 +162,48 @@ async editarAuditoria(request, response) {
     } = request.body;
 
     const { id } = request.params;
+
+    const [auditoria] = await db.query(
+      "SELECT aud_id FROM AUDITORIA WHERE aud_id = ?",
+      [id]
+    );
+
+    if (auditoria.length === 0) {
+      return response.status(404).json({
+        sucesso: false,
+        mensagem: "Auditoria não encontrada",
+        dados: null
+      });
+    }
+
+    if (!usu_id || !aud_acao || !aud_tabela_afetada || !aud_data_acao) {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: "Campos obrigatórios não informados",
+        dados: null
+      });
+    }
+
+    if (isNaN(usu_id)) {
+      return response.status(400).json({
+        sucesso: false,
+        mensagem: "usu_id deve ser numérico",
+        dados: null
+      });
+    }
+
+    const [usuario] = await db.query(
+      "SELECT usu_id FROM USUARIOS WHERE usu_id = ?",
+      [usu_id]
+    );
+
+    if (usuario.length === 0) {
+      return response.status(404).json({
+        sucesso: false,
+        mensagem: "Usuário não encontrado",
+        dados: null
+      });
+    }
 
     const sql = `
       UPDATE AUDITORIA

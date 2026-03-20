@@ -11,7 +11,6 @@ module.exports = {
       const limite = parseInt(limit);
       const offset = (pagina - 1) * limite;
 
-      // buscar total de registros
       const [total] = await db.query(`
         SELECT COUNT(*) as total
         FROM prazos
@@ -63,6 +62,60 @@ module.exports = {
 
       const { emp_id, praz_descricao, praz_data_vencimento, praz_status } = request.body;
 
+      if (!emp_id || !praz_descricao || !praz_data_vencimento || praz_status === undefined) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'Campos obrigatórios não informados',
+          dados: null
+        });
+      }
+
+      if (isNaN(emp_id)) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'emp_id deve ser numérico',
+          dados: null
+        });
+      }
+
+      if (typeof praz_descricao !== "string") {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'praz_descricao deve ser texto',
+          dados: null
+        });
+      }
+
+      const data = new Date(praz_data_vencimento);
+      if (isNaN(data.getTime())) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'Data de vencimento inválida',
+          dados: null
+        });
+      }
+
+      if (isNaN(praz_status)) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'praz_status deve ser numérico',
+          dados: null
+        });
+      }
+
+      const [empresa] = await db.query(
+        "SELECT emp_id FROM EMPRESAS WHERE emp_id = ?",
+        [emp_id]
+      );
+
+      if (empresa.length === 0) {
+        return response.status(404).json({
+          SUCESSO: false,
+          mensagem: 'Empresa não encontrada',
+          dados: null
+        });
+      }
+
       const sql = `
         INSERT INTO PRAZOS 
         (emp_id, praz_descricao, praz_data_vencimento, praz_status)
@@ -108,6 +161,39 @@ module.exports = {
       const { praz_descricao, praz_data_vencimento, praz_status } = request.body;
       const { id } = request.params;
 
+      if (!praz_descricao || !praz_data_vencimento || praz_status === undefined) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'Campos obrigatórios não informados',
+          dados: null
+        });
+      }
+
+      if (typeof praz_descricao !== "string") {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'praz_descricao deve ser texto',
+          dados: null
+        });
+      }
+
+      const data = new Date(praz_data_vencimento);
+      if (isNaN(data.getTime())) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'Data inválida',
+          dados: null
+        });
+      }
+
+      if (isNaN(praz_status)) {
+        return response.status(400).json({
+          SUCESSO: false,
+          mensagem: 'praz_status deve ser numérico',
+          dados: null
+        });
+      }
+
       const sql = `
         UPDATE PRAZOS 
         SET praz_descricao = ?, praz_data_vencimento = ?, praz_status = ?
@@ -146,6 +232,19 @@ module.exports = {
     try {
 
       const { id } = request.params;
+
+      const [prazo] = await db.query(
+        "SELECT praz_id FROM PRAZOS WHERE praz_id = ?",
+        [id]
+      );
+
+      if (prazo.length === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: `Prazo com ID ${id} não encontrado`,
+          dados: null
+        });
+      }
 
       const sql = `
         UPDATE PRAZOS

@@ -67,6 +67,46 @@ module.exports = {
         regi_status
       } = request.body;
 
+      if (!regi_nome || !regi_limite_faturamento_anual || !regi_tipo_emp_permitida || regi_status === undefined) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "Campos obrigatórios não informados",
+          dados: null
+        });
+      }
+
+      if (typeof regi_nome !== "string") {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_nome deve ser texto",
+          dados: null
+        });
+      }
+
+      if (isNaN(regi_limite_faturamento_anual)) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_limite_faturamento_anual deve ser numérico",
+          dados: null
+        });
+      }
+
+      if (typeof regi_tipo_emp_permitida !== "string") {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_tipo_emp_permitida deve ser texto",
+          dados: null
+        });
+      }
+
+      if (isNaN(regi_status)) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_status deve ser numérico",
+          dados: null
+        });
+      }
+
       const sql = `
         INSERT INTO REGIME
         (regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida, regi_status)
@@ -115,6 +155,59 @@ module.exports = {
 
       const { id } = request.params;
 
+      const [regime] = await db.query(
+        "SELECT regi_id FROM REGIME WHERE regi_id = ?",
+        [id]
+      );
+
+      if (regime.length === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: "Regime não encontrado",
+          dados: null
+        });
+      }
+
+      if (!regi_nome || !regi_limite_faturamento_anual || !regi_tipo_emp_permitida || regi_status === undefined) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "Campos obrigatórios não informados",
+          dados: null
+        });
+      }
+
+      if (typeof regi_nome !== "string") {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_nome deve ser texto",
+          dados: null
+        });
+      }
+
+      if (isNaN(regi_limite_faturamento_anual)) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_limite_faturamento_anual deve ser numérico",
+          dados: null
+        });
+      }
+
+      if (typeof regi_tipo_emp_permitida !== "string") {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_tipo_emp_permitida deve ser texto",
+          dados: null
+        });
+      }
+
+      if (isNaN(regi_status)) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_status deve ser numérico",
+          dados: null
+        });
+      }
+
       const sql = `
         UPDATE REGIME
         SET
@@ -156,6 +249,19 @@ module.exports = {
 
       const { id } = request.params;
 
+      const [regime] = await db.query(
+        "SELECT regi_id FROM REGIME WHERE regi_id = ?",
+        [id]
+      );
+
+      if (regime.length === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: "Regime não encontrado",
+          dados: null
+        });
+      }
+
       const sql = `
         DELETE FROM REGIME
         WHERE regi_id = ?
@@ -181,6 +287,19 @@ module.exports = {
     try {
 
       const { id } = request.params;
+
+      const [regime] = await db.query(
+        "SELECT regi_id FROM REGIME WHERE regi_id = ?",
+        [id]
+      );
+
+      if (regime.length === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: "Regime não encontrado",
+          dados: null
+        });
+      }
 
       const sql = `
         UPDATE REGIME
