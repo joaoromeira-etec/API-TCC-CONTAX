@@ -104,6 +104,72 @@ async listarDocumentos(request, response) {
             const { usu_id, emp_id, tpd_id, nome, dt_emissao, valor } = request.body;
             const doc_status = 1;
 
+            // Validação.
+            if (!usu_id || !emp_id || !tpd_id || !nome || !dt_emissao || !valor) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem:'Campos obrigatórios estão ausentes ou inválidos.',
+                    dados: null
+                })
+            }
+
+            // -- Regras de Negócio:
+
+            //1. Valores menores do que '0' não poderão ser cadastrados.
+            if (parseFloat(valor) <=0) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'O valor deve ser maior que zero.',
+                    dados: null
+                })
+            }
+
+            //2. Data de emissão inválida.
+            if (isNaN(Date.parse(dt_emissao))) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'A data de emissão é inválida.',
+                    dados: null
+                })
+            }
+
+            //3. Verificação de existência do Usuário.
+            const [usuario] = await db.query(
+                `SELECT usu_id FROM USUARIOS WHERE usu_id = ?`,
+                [usu_id]
+            );
+            if (usuario.length === 0) {
+                return response.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não encontrado.',
+                    dados: null
+                })
+            }
+
+            //4. Verificação de existência da Empresa.
+            const [empresa] = await db.query(
+                `SELECT emp_id FROM EMPRESAS WHERE emp_id = ?`,
+                [emp_id]
+            );
+            if (empresa.length === 0) {
+                return response.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Empresa não encontrada.'
+                })
+            }
+
+            //5. Verificação de existência do tipo do documento.
+            const [tipoDocumento] = await db.query(
+                `SELECT tpd_id FROM TIPODOCUMENTOS WHERE tpd_id = ?`,
+                [tpd_id]
+            );
+            if (tipoDocumento.length === 0) {
+                return response.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Tipo do documento não encontrado.'
+                })
+            }
+
             //Instrução SQL
             // PS: usu_id, emp_id e tpd_id são chaves estrangeiras
             const sql = `
@@ -114,7 +180,8 @@ async listarDocumentos(request, response) {
             `;
 
             //Valores
-            const values = [usu_id, emp_id, tpd_id, nome, dt_emissao, valor, doc_status];
+            const values = [parseInt(usu_id), parseInt(emp_id), parseInt(tpd_id), 
+                            nome, dt_emissao, parseFloat(valor), doc_status];
 
             //Execução da query
             const [result] =  await db.query(sql, values);
@@ -129,15 +196,12 @@ async listarDocumentos(request, response) {
                 dt_emissao,
                 valor
             };
-          
-
-
 
             return response.status(200).json(
                 {
                     sucesso: true,
                     mensagem: 'Cadastro de documentos realizado com sucesso',
-                    dados: dados
+                    dados
                 }
             );
         }        catch (error) {
@@ -145,7 +209,7 @@ async listarDocumentos(request, response) {
                 {
                     sucesso: false,
                     mensagem: `Erro ao cadastrar os seguintes documentos: ${error.message}`,
-                    dados: error.message
+                    dados: null
                 }
             );
         }
