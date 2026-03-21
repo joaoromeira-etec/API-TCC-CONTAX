@@ -1,38 +1,106 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-    async listarSuportes (request, response) {
-        try{
+ async listarSuportes(request, response) {
+    try {
+        const {
+            id,
+            assunto,
+            status,
+            usu_id_solicitante,
+            usu_id_responsavel,
+            dataInicio,
+            dataFim,
+            somentePrincipais,
+            page = 1,
+            limit = 5
+        } = request.query;
 
-            const sql = `
-                SELECT
-                    sup_id, usu_id_solicitante, usu_id_responsavel, sup_assunto, sup_descricao,
-                    sup_status, sup_data_abertura, sup_data_suporte, sup_id_resp 
-                FROM SUPORTE
-                WHERE sup_status = 1;
-            `;
+        const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
+        const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;
 
-            const [suporte] =  await db.query(sql);
+        const offset = (parseInt(page) - 1) * parseInt(limit);
 
-            return response.status(200).json(
-                {
-                    sucesso: true,
-                    mensagem: 'Suportes listados com sucesso',
-                    itens: suporte.length,
-                    dados: suporte,
-                }
-            );
-        }        catch (error) {
-            return response.status(500).json(
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao listar os suportes: ${error.message}`,
-                    dados: null
-                }
-            );
-        }
-    },
+        const [[{ id_min, id_max }]] = await db.query(`
+            SELECT MIN(sup_id) AS id_min, MAX(sup_id) AS id_max FROM SUPORTE
+        `);
 
+        const idMinLimite = idMin ??  id_min ?? 0;
+        const idMaxLimite = idMax ??  id_max ?? 999999;
+
+        const sup_assunto = assunto ? `%${assunto}%` : `%`;
+
+        let sql = `
+            SELECT 
+                sup_id, usu_id_solicitante, usu_id_responsavel, 
+                sup_assunto, sup_descricao, sup_status, sup_data_abertura, 
+                sup_data_suporte, sup_id_resp
+            FROM SUPORTE
+            WHERE 1=1
+            AND sup_assunto LIKE ?
+            ${status !== undefined ? 'AND sup_status = ?' : ''}
+            ${usu_id_solicitante ? 'AND usu_id_solicitante = ?' : ''}
+            ${usu_id_responsavel ? 'AND usu_id_responsavel = ?' : ''}
+            ${somentePrincipais === 'true' ? 'AND sup_id_resp IS NULL' : ''}
+            ${dataInicio && dataFim ? 'AND sup_data_abertura BETWEEN ? AND ?' : ''}
+            ${id ? 'AND sup_id = ?' : 'AND sup_id BETWEEN ? AND ?'}
+            LIMIT ?, ?
+        `;
+
+        const values = [
+            sup_assunto,
+            ...(status !== undefined ? [parseInt(status)] : []),
+            ...(usu_id_solicitante ? [parseInt(usu_id_solicitante)] : []),
+            ...(usu_id_responsavel ? [parseInt(usu_id_responsavel)] : []),
+            ...(dataInicio && dataFim ? [dataInicio, dataFim] : []),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+            offset,
+            parseInt(limit)
+        ];
+
+        const [rows] = await db.query(sql, values);
+
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM SUPORTE
+            WHERE 1=1
+            AND sup_assunto LIKE ?
+            ${status !== undefined ? 'AND sup_status = ?' : ''}
+            ${usu_id_solicitante ? 'AND usu_id_solicitante = ?' : ''}
+            ${usu_id_responsavel ? 'AND usu_id_responsavel = ?' : ''}
+            ${somentePrincipais === 'true' ? 'AND sup_id_resp IS NULL' : ''}
+            ${dataInicio && dataFim ? 'AND sup_data_abertura BETWEEN ? AND ?' : ''}
+            ${id ? 'AND sup_id = ?' : 'AND sup_id BETWEEN ? AND ?'}
+        `;
+
+        const countValues = [
+            sup_assunto,
+            ...(status !== undefined ? [parseInt(status)] : []),
+            ...(usu_id_solicitante ? [parseInt(usu_id_solicitante)] : []),
+            ...(usu_id_responsavel ? [parseInt(usu_id_responsavel)] : []),
+            ...(dataInicio && dataFim ? [dataInicio, dataFim] : []),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
+        ];
+
+        const [[{ total }]] = await db.query(countQuery, countValues);
+
+        response.setHeader('X-Total-Count', total);
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Lista de chamados',
+            nItens: rows.length,
+            dados: rows
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro ao listar os suportes: ${error.message}`,
+            dados: null
+        });
+    }
+},
 
      async cadastrarSuporte (request, response) {
         try{
