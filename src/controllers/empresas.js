@@ -1,63 +1,117 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-    async listarEmpresas (request, response) {
-        try {
+async listarEmpresas(request, response) {
+    try {
+        const {
+            id,
+            nome,
+            razao,
+            cnpj,
+            municipio,
+            tipo,
+            status,
+            page = 1,
+            limit = 5
+        } = request.query;
 
-            const sql = 
-            ` SELECT
-                emp_id, emp_nome_fantasia, emp_razao_social, emp_cnpj,
-                emp_endereco, emp_municipio, emp_telefone, emp_email, emp_tipo
+        const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
+        const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const [[{ id_min, id_max }]] = await db.query(`
+            SELECT MIN(emp_id) AS id_min, MAX(emp_id) AS id_max FROM EMPRESAS
+        `);
+
+        const idMinLimite = idMin ?? id_min ?? 0;
+        const idMaxLimite = idMax ?? id_max ?? 999999;
+
+        const emp_nome = nome ? `%${nome}%` : `%`;
+        const emp_razao = razao ? `%${razao}%` : `%`;
+        const emp_municipio = municipio ? `%${municipio}%` : `%`;
+
+        const statusFiltro = status !== undefined ? parseInt(status) : 1;
+
+        let sql = `
+            SELECT
+                emp_id,
+                emp_nome_fantasia,
+                emp_razao_social,
+                emp_cnpj,
+                emp_endereco,
+                emp_municipio,
+                emp_telefone,
+                emp_email,
+                CAST(emp_tipo AS UNSIGNED) AS emp_tipo
             FROM EMPRESAS
-            WHERE emp_status = 1;
-            `;
+            WHERE 1=1
+            AND emp_nome_fantasia LIKE ?
+            AND emp_razao_social LIKE ?
+            AND emp_municipio LIKE ?
+            AND emp_status = ?
+            ${cnpj ? 'AND emp_cnpj = ?' : ''}
+            ${tipo ? 'AND emp_tipo = ?' : ''}
+            ${id ? 'AND emp_id = ?' : 'AND emp_id BETWEEN ? AND ?'}
+            LIMIT ?, ?
+        `;
 
-            const [empresas] =  await db.query(sql);
+        const values = [
+            emp_nome,
+            emp_razao,
+            emp_municipio,
+            statusFiltro,
+            ...(cnpj ? [cnpj] : []),
+            ...(tipo ? [tipo] : []),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+            offset,
+            parseInt(limit)
+        ];
 
-            return response.status(200).json (
-                {
-                    sucesso: true,
-                    mensagem: 'Lista de empresas obtida com sucesso',
-                    itens: empresas.length,
-                    dados: empresas
-                }
-            );
-        } catch (error) {
-            return response.status (500).json (
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao listar empresas: ${error.message}`,
-                    dados: null
-                }
-            );
-        }
-    },
-    async listarEmps (request, response) {
-        try {
-            const sql = `
-            SELECT DISTINCT 
-                emp_nome_fantasia
-            FROM 
-                EMPRESAS
-            ORDER BY 
-                emp_nome_fantasia ASC;
-            `;
+        const [rows] = await db.query(sql, values);
 
-        const [rows] = await db.query(sql);
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM EMPRESAS
+            WHERE 1=1
+            AND emp_nome_fantasia LIKE ?
+            AND emp_razao_social LIKE ?
+            AND emp_municipio LIKE ?
+            AND emp_status = ?
+            ${cnpj ? 'AND emp_cnpj = ?' : ''}
+            ${tipo ? 'AND emp_tipo = ?' : ''}
+            ${id ? 'AND emp_id = ?' : 'AND emp_id BETWEEN ? AND ?'}
+        `;
 
-        return response.status(200).json ({
+        const countValues = [
+            emp_nome,
+            emp_razao,
+            emp_municipio,
+            statusFiltro,
+            ...(cnpj ? [cnpj] : []),
+            ...(tipo ? [tipo] : []),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
+        ];
+
+        const [[{ total }]] = await db.query(countQuery, countValues);
+
+        response.setHeader('X-Total-Count', total);
+
+        return response.status(200).json({
             sucesso: true,
             mensagem: 'Lista de empresas',
+            nItens: rows.length,
             dados: rows
         });
-        } catch (error) {
-            return response.status(500).json ({
-                sucesso: false,
-                mensagem: 'Erro na requisição',
-                dados: error.message
-            });
-        }
-    },
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro ao listar empresas: ${error.message}`,
+            dados: null
+        });
+    }
+},
     async listarMunicipios (request, response) {
         const {id, nome_fantasia, razao_social, cnpj,
                endereco, telefone, email, tipo, status = 1} = request.query;

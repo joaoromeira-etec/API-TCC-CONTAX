@@ -4,13 +4,8 @@ module.exports = {
 async listarDocumentos(request, response) {
     try {
         const {
-            id,
-            nome,
-            tpd_id,
-            emp_id,
-            valor,
-            page = 1,
-            limit = 5
+            id, nome, tpd_id, emp_id, 
+            valor, page = 1, limit = 5
         } = request.query;
 
         const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;

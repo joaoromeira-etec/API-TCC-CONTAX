@@ -6,15 +6,13 @@ const empresasController = require('../controllers/empresas');
 const usuarioEmpresaController = require('../controllers/usuarioEmpresa');
 
 router.get('/usuarios', usuariosController.listarUsuarios);
-router.get('/usuarios/listarUsus', usuariosController.listarUsus);
 router.post('/usuarios', usuariosController.cadastrarUsuarios);
 router.patch('/usuarios/:id', usuariosController.editarUsuarios);
 router.delete('/usuarios/:id', usuariosController.apagarUsuarios);
 router.delete('/usuarios/del/:id', usuariosController.ocultarUsuarios);
 router.get('/usuarios/login', usuariosController.loginUsuarios);
 
-router.get('/empresas', empresasController.listarEmpresas);
-router.get('/empresas/listarEmps', empresasController.listarEmps);
+router.get('/empresas', empresasController.listarEmpresas);;
 router.post('/empresas', empresasController.cadastrarEmpresas);
 router.patch('/empresas/:id', empresasController.editarEmpresas);
 router.delete('/empresas/:id', empresasController.apagarEmpresas);
