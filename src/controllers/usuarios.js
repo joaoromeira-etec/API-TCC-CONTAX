@@ -86,6 +86,61 @@ module.exports = {
             });
         }
     },
+
+    async listarEmpresasDoUsuario (request, response) {
+    try {
+        const { id } = request.params;
+
+        const sql = `
+            SELECT
+                u.usu_id,
+                u.usu_nome,
+                e.emp_id,
+                e.emp_nome_fantasia,
+                ue.usu_emp_nivel_acesso,
+                ue.usu_emp_data_vinculo
+            FROM USUARIO_EMPRESAS ue
+            INNER JOIN USUARIOS u ON u.usu_id = ue.usu_id
+            INNER JOIN EMPRESAS e ON e.emp_id = ue.emp_id
+            WHERE ue.usu_emp_status = 1
+            AND u.usu_id = ?;
+        `;
+
+        const [rows] = await db.query(sql, [id]);
+
+        if (rows.length === 0) {
+            return response.status(404).json({
+                sucesso: false,
+                mensagem: 'Usuário não encontrado ou sem empresas',
+                dados: null
+            });
+        }
+
+        const usuario = {
+            id: rows[0].usu_id,
+            nome: rows[0].usu_nome,
+            empresas: rows.map(row => ({
+                emp_id: row.emp_id,
+                nome: row.emp_nome_fantasia,
+                nivel: row.usu_emp_nivel_acesso,
+                data_vinculo: row.usu_emp_data_vinculo
+            }))
+        };
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Empresas do usuário',
+            dados: usuario
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro: ${error.message}`,
+            dados: null
+        });
+    }
+    },       
     async cadastrarUsuarios (request, response) {
         try {
             const {nome, email, cpf, senha, telefone, alterar_senha} = request.body;

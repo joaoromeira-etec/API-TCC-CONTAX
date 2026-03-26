@@ -1,34 +1,118 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-    async listarUsuarioEmpresa (request, response) {
-        try {
+async listarUsuarioEmpresa(request, response) {
+    try {
+        const {
+            id,
+            emp_id,
+            usu_id,
+            nivel,
+            data,
+            page = 1,
+            limit = 5
+        } = request.query;
 
-            const sql = 
-            `SELECT
+        const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
+        const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const [[{ id_min, id_max }]] = await db.query(`
+            SELECT MIN(usu_emp_id) AS id_min, MAX(usu_emp_id) AS id_max 
+            FROM USUARIO_EMPRESAS
+        `);
+
+        const idMinLimite = idMin ? idMin : (id_min ?? 0);
+        const idMaxLimite = idMax ? idMax : (id_max ?? 999999);
+
+        // Implementação de flexibilidade por ano, mês e dia.
+        const { ano, mes, dia } = request.query;
+
+         //Filtro de Data, ex: "Data=2023, Data=2024-03, etc."
+        let filtroData = '';
+        let valoresData = [];
+
+        
+        if (ano) {
+            filtroData += ' AND YEAR(usu_emp_data_vinculo) = ?';
+            valoresData.push(parseInt(ano));
+        }
+
+        if (mes) {
+            filtroData += ' AND MONTH(usu_emp_data_vinculo) = ?';
+            valoresData.push(parseInt(mes));
+        }
+
+        if (dia) {
+            filtroData += ' AND DAY(usu_emp_data_vinculo) = ?';
+            valoresData.push(parseInt(dia));
+        }
+
+        let sql = `
+            SELECT
                 usu_emp_id, emp_id, usu_id, usu_emp_nivel_acesso,
                 usu_emp_data_vinculo, usu_emp_observacoes
             FROM USUARIO_EMPRESAS
-            WHERE usu_emp_status = 1;
-            `;
+            WHERE usu_emp_status = 1
+            ${emp_id ? 'AND emp_id = ?' : ''}
+            ${usu_id ? 'AND usu_id = ?' : ''}
+            ${nivel ? 'AND usu_emp_nivel_acesso = ?' : ''}
+            ${filtroData}
+            ${id ? 'AND usu_emp_id = ?' : 'AND usu_emp_id BETWEEN ? AND ?'}
+            LIMIT ?, ?
+        `;
 
-            const [usuarioEmpresas] = await db.query (sql);
+        const values = [
+            ...(emp_id ? [parseInt(emp_id)] : []),
+            ...(usu_id ? [parseInt(usu_id)] : []),
+            ...(nivel ? [parseInt(nivel)] : []),
+            ...valoresData,
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+            offset,
+            parseInt(limit)
+        ];
 
-            return response.status(200).json ({
-                sucesso: true,
-                mensagem: 'Lista de usuários por empresa obtida com sucesso',
-                itens: usuarioEmpresas.length,
-                dados: usuarioEmpresas
-            });
+        const [rows] = await db.query(sql, values);
 
-        } catch (error) {
-            return response.status (500).json ({
-                sucesso: false,
-                mensagem: `Erro ao listar usuários por empresas: ${error.message}`,
-                dados: null
-            });
-        }
-    },
+        const countQuery = `
+            SELECT COUNT(*) AS total
+            FROM USUARIO_EMPRESAS
+            WHERE usu_emp_status = 1
+            ${emp_id ? 'AND emp_id = ?' : ''}
+            ${usu_id ? 'AND usu_id = ?' : ''}
+            ${nivel ? 'AND usu_emp_nivel_acesso = ?' : ''}
+            ${filtroData}
+            ${id ? 'AND usu_emp_id = ?' : 'AND usu_emp_id BETWEEN ? AND ?'}
+        `;
+
+        const countValues = [
+            ...(emp_id ? [parseInt(emp_id)] : []),
+            ...(usu_id ? [parseInt(usu_id)] : []),
+            ...(nivel ? [parseInt(nivel)] : []),
+            ...valoresData,
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
+        ];
+
+        const [[{ total }]] = await db.query(countQuery, countValues);
+
+        response.setHeader('X-Total-Count', total);
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Lista de usuários por empresa',
+            nItens: rows.length,
+            dados: rows
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro ao listar usuário_empresa: ${error.message}`,
+            dados: null
+        });
+    }
+},
     async cadastrarUsuarioEmpresa (request, response) {
         try {
 
