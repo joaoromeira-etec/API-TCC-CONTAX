@@ -86,6 +86,51 @@ module.exports = {
             });
         }
     },
+    async loginUsuarios (request, response) {
+        try {
+            const {email, senha} = request.query;
+
+            const sql = `
+                SELECT 
+                    usu_id, usu_nome, usu_status 
+                FROM 
+                    USUARIOS
+                WHERE 
+                    usu_email = ? AND usu_senha_hash = ? AND usu_status = 1;
+            `;
+        
+            const values = [email, senha];
+
+            const [rows] = await db.query(sql, values);
+            const nItens = rows.length;
+
+        if (nItens < 1) {
+            return response.status(403).json ({
+                sucesso: false,
+                mensagem: 'Login e/ou senha inválida',
+                dados: null,
+            });
+        }
+
+        const dados = rows.map(usuarios => ({
+            id: usuarios.usu_id,
+            nome: usuarios.usu_nome,
+            status: usuarios.usu_status
+        }))
+
+        return response.status(200).json ({
+            sucesso: true,
+            mensagem: 'Login efetuado com sucesso',
+            dados
+        });
+        } catch (error) {
+            return response.status(500).json ({
+                sucesso: false,
+                mensagem: 'Erro na requisição',
+                dados: error.message
+            });
+        }
+    },
 
     async listarEmpresasDoUsuario (request, response) {
     try {
@@ -323,50 +368,5 @@ module.exports = {
                 dados: error.message
             });
         }
-    },
-    async loginUsuarios (request, response) {
-        try {
-            const {email, senha} = request.query;
-
-            const sql = `
-                SELECT 
-                    usu_id, usu_nome, usu_status 
-                FROM 
-                    USUARIOS
-                WHERE 
-                    usu_email = ? AND usu_senha_hash = ? AND usu_status = 1;
-            `;
-        
-            const values = [email, senha];
-
-            const [rows] = await db.query(sql, values);
-            const nItens = rows.length;
-
-        if (nItens < 1) {
-            return response.status(403).json ({
-                sucesso: false,
-                mensagem: 'Login e/ou senha inválida',
-                dados: null,
-            });
-        }
-
-        const dados = rows.map(usuarios => ({
-            id: usuarios.usu_id,
-            nome: usuarios.usu_nome,
-            status: usuarios.usu_status
-        }))
-
-        return response.status(200).json ({
-            sucesso: true,
-            mensagem: 'Login efetuado com sucesso',
-            dados
-        });
-        } catch (error) {
-            return response.status(500).json ({
-                sucesso: false,
-                mensagem: 'Erro na requisição',
-                dados: error.message
-            });
-        }
-    },
+    }
 }

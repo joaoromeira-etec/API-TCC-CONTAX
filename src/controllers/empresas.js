@@ -1,7 +1,7 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-async listarEmpresas(request, response) {
+    async listarEmpresas(request, response) {
     try {
         const {
             id,
@@ -111,10 +111,54 @@ async listarEmpresas(request, response) {
             dados: null
         });
     }
-},
-    async listarMunicipios (request, response) {
-        const {id, nome_fantasia, razao_social, cnpj,
-               endereco, telefone, email, tipo, status = 1} = request.query;
+    },
+    async loginEmpresas (request, response) {
+    try {
+
+        const { email, senha } = request.query;
+
+        const sql = ` 
+            SELECT 
+                emp_id, emp_razao_social, emp_cnpj, emp_tipo
+            FROM 
+                EMPRESAS
+            WHERE 
+                emp_email = ? AND emp_senha_hash = ? AND emp_status = 1;
+        `;
+
+        const values = [email, senha];
+
+        const [rows] = await db.query(sql, values);
+        const nItens = rows.length;
+
+        if (nItens < 1) {
+            return response.status(403).json({
+                sucesso: false,
+                mensagem: 'Login e/ou senha inválida',
+                dados: null,
+            });
+        }
+
+        const dados = rows.map(empresas => ({
+            id: empresas.emp_id,
+            razao_social: empresas.emp_razao_social,
+            cnpj: empresas.emp_cnpj,
+            tipo: empresas.emp_tipo
+        }))
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Login efetuado com sucesso',
+            dados
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro na requisição',
+            dados: error.message
+        });
+    }
     },
     async cadastrarEmpresas (request, response) {
         try {
@@ -310,53 +354,5 @@ async listarEmpresas(request, response) {
                 dados: error.message
             });
         }
-    },
-    async loginEmpresas (request, response) {
-    try {
-
-        const { email, senha } = request.query;
-
-        const sql = ` 
-            SELECT 
-                emp_id, emp_razao_social, emp_cnpj, emp_tipo
-            FROM 
-                EMPRESAS
-            WHERE 
-                emp_email = ? AND emp_senha_hash = ? AND emp_status = 1;
-        `;
-
-        const values = [email, senha];
-
-        const [rows] = await db.query(sql, values);
-        const nItens = rows.length;
-
-        if (nItens < 1) {
-            return response.status(403).json({
-                sucesso: false,
-                mensagem: 'Login e/ou senha inválida',
-                dados: null,
-            });
-        }
-
-        const dados = rows.map(empresas => ({
-            id: empresas.emp_id,
-            razao_social: empresas.emp_razao_social,
-            cnpj: empresas.emp_cnpj,
-            tipo: empresas.emp_tipo
-        }))
-
-        return response.status(200).json({
-            sucesso: true,
-            mensagem: 'Login efetuado com sucesso',
-            dados
-        });
-
-    } catch (error) {
-        return response.status(500).json({
-            sucesso: false,
-            mensagem: 'Erro na requisição',
-            dados: error.message
-        });
-    }
     },
 }
