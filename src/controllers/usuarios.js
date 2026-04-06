@@ -156,7 +156,7 @@ module.exports = {
         if (rows.length === 0) {
             return response.status(404).json({
                 sucesso: false,
-                mensagem: 'Usuário não encontrado ou sem empresas',
+                mensagem: 'Usuário não encontrado ou sem empresa cadastrada.',
                 dados: null
             });
         }
