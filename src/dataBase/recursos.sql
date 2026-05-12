@@ -8,7 +8,6 @@ SELECT tpd_id, tpd_descricao FROM TIPO_DOCUMENTOS;
 SELECT doc_id, usu_id, emp_id, tpd_id, doc_arquivo_nome, doc_status, doc_data_emissao, doc_valor FROM DOCUMENTOS;
 SELECT praz_id, emp_id, praz_descricao, praz_data_vencimento, praz_status FROM PRAZOS;
 SELECT aud_id, usu_id, aud_acao, aud_tabela_afetada, aud_registro_afetado, aud_data_acao FROM AUDITORIA;
-SELECT sup_id, usu_id_solicitante, usu_id_responsavel, sup_assunto, sup_descricao, sup_status, sup_data_abertura, sup_data_suporte, sup_id_resp FROM SUPORTE;
 
 -- SELECTs com INNER JOIN para tabelas com chave estrangeira
 SELECT ue.emp_id, e.emp_nome_fantasia, ue.usu_id, u.usu_nome, ue.usu_emp_nivel_acesso, ue.usu_emp_data_vínculo, ue.usu_emp_ativo, ue.usu_emp_observacoes
@@ -35,14 +34,7 @@ SELECT a.aud_id, a.usu_id, u.usu_nome, a.aud_acao, a.aud_tabela_afetada, a.aud_r
 FROM AUDITORIA a
 INNER JOIN USUARIOS u ON a.usu_id = u.usu_id;
 
-SELECT s.sup_id, s.usu_id_solicitante, us.usu_nome AS solicitante, s.usu_id_responsavel, ur.usu_nome AS responsavel, s.sup_assunto, s.sup_descricao, s.sup_status, s.sup_data_abertura, s.sup_data_suporte, s.sup_id_resp, urp.usu_nome AS responsavel_resposta
-FROM SUPORTE s
-INNER JOIN USUARIOS us ON s.usu_id_solicitante = us.usu_id
-INNER JOIN USUARIOS ur ON s.usu_id_responsavel = ur.usu_id
-INNER JOIN USUARIOS urp ON s.sup_id_resp = urp.usu_id;
-
 -- DROP TABLES na ordem correta (filhas antes das pais)
-DROP TABLE IF EXISTS SUPORTE;
 DROP TABLE IF EXISTS AUDITORIA;
 DROP TABLE IF EXISTS PRAZOS;
 DROP TABLE IF EXISTS DOCUMENTOS;

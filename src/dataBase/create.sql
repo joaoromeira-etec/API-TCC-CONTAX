@@ -95,18 +95,3 @@ CREATE TABLE AUDITORIA (
     aud_data_acao DATETIME NOT NULL,
     FOREIGN KEY (usu_id) REFERENCES USUARIOS(usu_id)
 );
-
-CREATE TABLE SUPORTE (
-    sup_id SMALLINT PRIMARY KEY AUTO_INCREMENT,
-    usu_id_solicitante INT,
-    usu_id_responsavel INT,
-    sup_assunto VARCHAR(50) NOT NULL,
-    sup_descricao TEXT NOT NULL,
-    sup_status TINYINT NOT NULL, -- 0-Aberto; 1-Em andamento; 2-Concluído
-    sup_data_abertura DATETIME NOT NULL,
-    sup_data_suporte DATETIME NOT NULL,
-    sup_id_resp SMALLINT,
-    FOREIGN KEY (usu_id_solicitante) REFERENCES USUARIOS(usu_id),
-    FOREIGN KEY (usu_id_responsavel) REFERENCES USUARIOS(usu_id),
-    FOREIGN KEY (sup_id_resp) REFERENCES SUPORTE(sup_id)
-);
