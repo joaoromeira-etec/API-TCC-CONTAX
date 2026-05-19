@@ -113,7 +113,7 @@ async listarUsuarios(request, response) {
         });
     }
 },
-    async loginUsuarios (request, response) {
+async loginUsuarios (request, response) {
         try {
             const {email, senha} = request.query;
 
@@ -157,9 +157,8 @@ async listarUsuarios(request, response) {
                 dados: error.message
             });
         }
-    },
-
-    async listarEmpresasDoUsuario (request, response) {
+},
+async listarEmpresasDoUsuario (request, response) {
     try {
         const { id } = request.params;
 
@@ -212,8 +211,8 @@ async listarUsuarios(request, response) {
             dados: null
         });
     }
-    },       
-    async cadastrarUsuarios (request, response) {
+},       
+async cadastrarUsuarios (request, response) {
         try {
             const {nome, email, cpf, senha, telefone, alterar_senha} = request.body;
             const usu_status = 1;
@@ -256,8 +255,10 @@ async listarUsuarios(request, response) {
                 }
             );
         }
-    },
-    async editarUsuarios (request, response) {
+},
+async cadastrarEnderecoUsuarios (request, response) {
+},
+ async editarUsuarios (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição
             const {nome, email, cpf, senha, telefone, status} = request.body;
@@ -303,8 +304,8 @@ async listarUsuarios(request, response) {
                     dados: error.message
                 });
         }
-    },
-    async apagarUsuarios (request, response) {
+},
+ async apagarUsuarios (request, response) {
         try {
             //Parâmetro passado via url na chamada da api pelo front-end
             const {id} = request.params;
@@ -336,8 +337,8 @@ async listarUsuarios(request, response) {
                 dados: error.message
                 });
         }
-    },
-    async ocultarUsuarios (request, response) {
+},
+async ocultarUsuarios (request, response) {
         try {
             const {id} = request.params;
             //1. Verificar se o registro existe
@@ -395,5 +396,5 @@ async listarUsuarios(request, response) {
                 dados: error.message
             });
         }
-    }
+}
 }
