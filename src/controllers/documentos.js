@@ -28,18 +28,33 @@ async listarDocumentos(request, response) {
 
 
         let sql = `
-            SELECT 
-                doc_id, usu_id, emp_id, tpd_id,
-                doc_arquivo_nome, doc_data_emissao, doc_valor
-            FROM DOCUMENTOS
-            WHERE doc_status = 1
-            AND doc_arquivo_nome LIKE ?
-            ${tpd_id ? 'AND tpd_id = ?' : ''}
-            ${emp_id ? 'AND emp_id = ?' : ''}
-            ${id ? 'AND doc_id = ?' : 'AND doc_id BETWEEN ? AND ?'}
-            AND doc_valor <= ?
-            LIMIT ?, ?
-        `;
+        SELECT 
+            d.doc_id,
+            d.usu_id,
+            d.emp_id,
+            d.tpd_id,
+            d.doc_arquivo_nome,
+            d.doc_data_emissao,
+            d.doc_valor,
+            CAST(d.doc_status AS UNSIGNED) AS doc_status,
+            e.emp_nome_fantasia,
+            e.emp_cnpj,
+            t.tpd_descricao
+        FROM DOCUMENTOS d
+
+        INNER JOIN EMPRESAS e
+            ON e.emp_id = d.emp_id
+        INNER JOIN TIPO_DOCUMENTOS t
+            ON t.tpd_id = d.tpd_id
+
+        WHERE d.doc_status = 1
+        AND d.doc_arquivo_nome LIKE ?
+        ${tpd_id ? 'AND d.tpd_id = ?' : ''}
+        ${emp_id ? 'AND d.emp_id = ?' : ''}
+        ${id ? 'AND d.doc_id = ?' : 'AND d.doc_id BETWEEN ? AND ?'}
+        AND d.doc_valor <= ?
+        LIMIT ?, ?
+    `;
 
         const values = [
     `%${nome ?? ''}%`,
@@ -55,13 +70,20 @@ async listarDocumentos(request, response) {
 
         const countQuery = `
             SELECT COUNT(*) AS total
-            FROM DOCUMENTOS
-            WHERE doc_status = 1
-            AND doc_arquivo_nome LIKE ?
-            ${tpd_id ? 'AND tpd_id = ?' : ''}
-            ${emp_id ? 'AND emp_id = ?' : ''}
-            ${id ? 'AND doc_id = ?' : 'AND doc_id BETWEEN ? AND ?'}
-            AND doc_valor <= ?
+            FROM DOCUMENTOS d
+
+            INNER JOIN EMPRESAS e
+               ON e.emp_id = d.emp_id
+
+            INNER JOIN TIPO_DOCUMENTOS t
+               ON t.tpd_id = d.tpd_id
+
+            WHERE d.doc_status = 1
+            AND d.doc_arquivo_nome LIKE ?
+            ${tpd_id ? 'AND d.tpd_id = ?' : ''}
+            ${emp_id ? 'AND d.emp_id = ?' : ''}
+            ${id ? 'AND d.doc_id = ?' : 'AND d.doc_id BETWEEN ? AND ?'}
+            AND d.doc_valor <= ?
         `;
 
        const countValues = [

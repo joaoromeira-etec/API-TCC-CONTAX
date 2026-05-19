@@ -1,91 +1,118 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-    async listarUsuarios (request, response) {
-        try {
+async listarUsuarios(request, response) {
+    try {
+        const {
+            id, nome, email,
+            status, page = 1, limit = 5,
+        } = request.query;
 
-            const {
-                id, nome, email,
-                status, page = 1, limit = 5,
-            } = request.query;
+        const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
+        const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;
 
-            const idMin = request.query.idMin ? parseInt(request.query.idMin) : undefined;
-            const idMax = request.query.idMax ? parseInt(request.query.idMax) : undefined;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
 
-            const offset = (parseInt(page) - 1) * parseInt(limit);
+        const [[{ id_min, id_max }]] = await db.query(`
+            SELECT MIN(usu_id) as id_min, MAX(usu_id) AS id_max FROM USUARIOS
+        `);
 
-            const [[{ id_min, id_max }]] = await db.query(`
-                SELECT MIN(usu_id) as id_min, MAX(usu_id) AS id_max FROM USUARIOS
-            `);
+        const idMinLimite = idMin ?? id_min ?? 0;
+        const idMaxLimite = idMax ?? id_max ?? 0;
 
-            const idMinLimite = idMin ?? id_min ?? 0;
-            const idMaxLimite = idMax ?? id_max ?? 0;
+        const usu_nome = nome ? `%${nome}%` : `%`;
+        const usu_email = email ? `%${email}%` : `%`;
 
-            const usu_nome = nome ? `%${nome}%` : `%`;
-            const usu_email = email ? `%${email}%` : `%`;
-            
-            const sql = `
+        const sql = `
             SELECT
-                usu_id, usu_nome, usu_email, usu_cpf, usu_telefone, 
-                CAST(usu_status AS UNSIGNED) AS usu_status, 
-                CAST(usu_alterar_senha AS UNSIGNED) AS usu_alterar_senha
-            FROM USUARIOS
+                u.usu_id,
+                u.usu_nome,
+                u.usu_email,
+                u.usu_cpf,
+                u.usu_telefone,
+
+                CAST(u.usu_status AS UNSIGNED) AS usu_status,
+                CAST(u.usu_alterar_senha AS UNSIGNED) AS usu_alterar_senha,
+
+                e.emp_id,
+                e.emp_nome_fantasia AS empresa_nome,
+
+                CAST(ue.usu_emp_nivel_acesso AS UNSIGNED) AS nivel_acesso,
+                CAST(ue.usu_emp_status AS UNSIGNED) AS vinculo_status
+
+            FROM USUARIOS u
+
+            LEFT JOIN USUARIO_EMPRESAS ue
+                ON ue.usu_id = u.usu_id
+                AND ue.usu_emp_status = 1
+
+            LEFT JOIN EMPRESAS e
+                ON e.emp_id = ue.emp_id
+
             WHERE 1=1
-            AND usu_nome LIKE ?
-            AND usu_email LIKE ?
-            ${status !== undefined ? 'AND usu_status = ?' : ''}
-            ${id ? 'AND usu_id = ?' : 'AND usu_id BETWEEN ? AND ?'}
+            AND u.usu_nome LIKE ?
+            AND u.usu_email LIKE ?
+            ${status !== undefined ? 'AND u.usu_status = ?' : ''}
+            ${id ? 'AND u.usu_id = ?' : 'AND u.usu_id BETWEEN ? AND ?'}
+
             LIMIT ?, ?
-            `;
+        `;
 
-            const values = [
-                usu_nome,
-                usu_email,
-                ...(status !== undefined ? [parseInt(status)] : []),
-                ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
-                offset,
-                parseInt(limit)
-            ]
+        const values = [
+            usu_nome,
+            usu_email,
+            ...(status !== undefined ? [parseInt(status)] : []),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+            offset,
+            parseInt(limit)
+        ];
 
-            const [rows] = await db.query(sql, values);
+        const [rows] = await db.query(sql, values);
 
-            const countQuery = `
-                SELECT COUNT(*) AS total
-                FROM USUARIOS
-                WHERE 1=1
-                AND usu_nome LIKE ?
-                AND usu_email LIKE ?
-                ${status !== undefined ? 'AND usu_status = ?' : ''}
-                ${id ? 'AND usu_id = ?' : 'AND usu_id BETWEEN ? AND ?'}
-            `;
+        const countQuery = `
+            SELECT COUNT(DISTINCT u.usu_id) AS total
+            FROM USUARIOS u
 
-            const countValues = [
-                usu_nome,
-                usu_email,
-                ...(status !== undefined ? [parseInt(status)] : []),
-                ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
-            ];            
+            LEFT JOIN USUARIO_EMPRESAS ue
+                ON ue.usu_id = u.usu_id
+                AND ue.usu_emp_status = 1
 
+            LEFT JOIN EMPRESAS e
+                ON e.emp_id = ue.emp_id
 
-            const [[{ total }]] = await db.query(countQuery, countValues);
+            WHERE 1=1
+            AND u.usu_nome LIKE ?
+            AND u.usu_email LIKE ?
+            ${status !== undefined ? 'AND u.usu_status = ?' : ''}
+            ${id ? 'AND u.usu_id = ?' : 'AND u.usu_id BETWEEN ? AND ?'}
+        `;
 
-            response.setHeader('X-Total-Count', total);
+        const countValues = [
+            usu_nome,
+            usu_email,
+            ...(status !== undefined ? [parseInt(status)] : []),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
+        ];
 
-            return response.status(200).json({
-                sucesso: true,
-                mensagem: 'Lista de usuários',
-                nItens: rows.length,
-                dados: rows
-            });
+        const [[{ total }]] = await db.query(countQuery, countValues);
 
-        }   catch (error) {
-                return response.status(500).json({
-                sucesso: false,
-                mensagem: `Erro ao listar usuários: ${error.message}`,
-                dados: null
-            });
-        }
-    },
+        response.setHeader('X-Total-Count', total);
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Lista de usuários',
+            nItens: rows.length,
+            dados: rows
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: `Erro ao listar usuários: ${error.message}`,
+            dados: null
+        });
+    }
+},
     async loginUsuarios (request, response) {
         try {
             const {email, senha} = request.query;
