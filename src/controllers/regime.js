@@ -4,7 +4,6 @@ module.exports = {
 
   async listarRegime(request, response) {
     try {
-
       const { page = 1, limit = 5 } = request.query;
 
       const pagina = parseInt(page);
@@ -28,6 +27,7 @@ module.exports = {
           regi_tipo_emp_permitida,
           regi_status
         FROM REGIME
+        ORDER BY regi_id DESC
         LIMIT ?, ?
       `;
 
@@ -58,7 +58,6 @@ module.exports = {
 
   async cadastrarRegime(request, response) {
     try {
-
       const {
         regi_nome,
         regi_descricao,
@@ -67,7 +66,13 @@ module.exports = {
         regi_status
       } = request.body;
 
-      if (!regi_nome || !regi_limite_faturamento_anual || !regi_tipo_emp_permitida || regi_status === undefined) {
+      if (
+        !regi_nome ||
+        !regi_descricao ||
+        regi_limite_faturamento_anual === undefined ||
+        regi_tipo_emp_permitida === undefined ||
+        regi_status === undefined
+      ) {
         return response.status(400).json({
           sucesso: false,
           mensagem: "Campos obrigatórios não informados",
@@ -75,10 +80,18 @@ module.exports = {
         });
       }
 
-      if (typeof regi_nome !== "string") {
+      if (typeof regi_nome !== "string" || regi_nome.trim() === "") {
         return response.status(400).json({
           sucesso: false,
           mensagem: "regi_nome deve ser texto",
+          dados: null
+        });
+      }
+
+      if (typeof regi_descricao !== "string" || regi_descricao.trim() === "") {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_descricao deve ser texto",
           dados: null
         });
       }
@@ -91,10 +104,18 @@ module.exports = {
         });
       }
 
-      if (typeof regi_tipo_emp_permitida !== "string") {
+      if (isNaN(regi_tipo_emp_permitida)) {
         return response.status(400).json({
           sucesso: false,
-          mensagem: "regi_tipo_emp_permitida deve ser texto",
+          mensagem: "regi_tipo_emp_permitida deve ser numérico",
+          dados: null
+        });
+      }
+
+      if (regi_tipo_emp_permitida < 0 || regi_tipo_emp_permitida > 2) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_tipo_emp_permitida deve ser 0, 1 ou 2",
           dados: null
         });
       }
@@ -107,6 +128,14 @@ module.exports = {
         });
       }
 
+      if (regi_status < 0 || regi_status > 1) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_status deve ser 0 ou 1",
+          dados: null
+        });
+      }
+
       const sql = `
         INSERT INTO REGIME
         (regi_nome, regi_descricao, regi_limite_faturamento_anual, regi_tipo_emp_permitida, regi_status)
@@ -114,8 +143,8 @@ module.exports = {
       `;
 
       const values = [
-        regi_nome,
-        regi_descricao,
+        regi_nome.trim(),
+        regi_descricao.trim(),
         regi_limite_faturamento_anual,
         regi_tipo_emp_permitida,
         regi_status
@@ -128,7 +157,11 @@ module.exports = {
         mensagem: "Regime cadastrado com sucesso",
         dados: {
           id: result.insertId,
-          ...request.body
+          regi_nome,
+          regi_descricao,
+          regi_limite_faturamento_anual,
+          regi_tipo_emp_permitida,
+          regi_status
         }
       });
 
@@ -144,7 +177,6 @@ module.exports = {
 
   async editarRegime(request, response) {
     try {
-
       const {
         regi_nome,
         regi_descricao,
@@ -155,20 +187,21 @@ module.exports = {
 
       const { id } = request.params;
 
-      const [regime] = await db.query(
-        "SELECT regi_id FROM REGIME WHERE regi_id = ?",
-        [id]
-      );
-
-      if (regime.length === 0) {
-        return response.status(404).json({
+      if (!id || isNaN(id)) {
+        return response.status(400).json({
           sucesso: false,
-          mensagem: "Regime não encontrado",
+          mensagem: "ID inválido",
           dados: null
         });
       }
 
-      if (!regi_nome || !regi_limite_faturamento_anual || !regi_tipo_emp_permitida || regi_status === undefined) {
+      if (
+        !regi_nome ||
+        !regi_descricao ||
+        regi_limite_faturamento_anual === undefined ||
+        regi_tipo_emp_permitida === undefined ||
+        regi_status === undefined
+      ) {
         return response.status(400).json({
           sucesso: false,
           mensagem: "Campos obrigatórios não informados",
@@ -176,10 +209,18 @@ module.exports = {
         });
       }
 
-      if (typeof regi_nome !== "string") {
+      if (typeof regi_nome !== "string" || regi_nome.trim() === "") {
         return response.status(400).json({
           sucesso: false,
           mensagem: "regi_nome deve ser texto",
+          dados: null
+        });
+      }
+
+      if (typeof regi_descricao !== "string" || regi_descricao.trim() === "") {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_descricao deve ser texto",
           dados: null
         });
       }
@@ -192,10 +233,18 @@ module.exports = {
         });
       }
 
-      if (typeof regi_tipo_emp_permitida !== "string") {
+      if (isNaN(regi_tipo_emp_permitida)) {
         return response.status(400).json({
           sucesso: false,
-          mensagem: "regi_tipo_emp_permitida deve ser texto",
+          mensagem: "regi_tipo_emp_permitida deve ser numérico",
+          dados: null
+        });
+      }
+
+      if (regi_tipo_emp_permitida < 0 || regi_tipo_emp_permitida > 2) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_tipo_emp_permitida deve ser 0, 1 ou 2",
           dados: null
         });
       }
@@ -204,6 +253,27 @@ module.exports = {
         return response.status(400).json({
           sucesso: false,
           mensagem: "regi_status deve ser numérico",
+          dados: null
+        });
+      }
+
+      if (regi_status < 0 || regi_status > 1) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "regi_status deve ser 0 ou 1",
+          dados: null
+        });
+      }
+
+      const [regime] = await db.query(
+        "SELECT regi_id FROM REGIME WHERE regi_id = ?",
+        [id]
+      );
+
+      if (regime.length === 0) {
+        return response.status(404).json({
+          sucesso: false,
+          mensagem: "Regime não encontrado",
           dados: null
         });
       }
@@ -220,8 +290,8 @@ module.exports = {
       `;
 
       const values = [
-        regi_nome,
-        regi_descricao,
+        regi_nome.trim(),
+        regi_descricao.trim(),
         regi_limite_faturamento_anual,
         regi_tipo_emp_permitida,
         regi_status,
@@ -232,13 +302,22 @@ module.exports = {
 
       return response.status(200).json({
         sucesso: true,
-        mensagem: "Regime atualizado com sucesso"
+        mensagem: "Regime atualizado com sucesso",
+        dados: {
+          id,
+          regi_nome,
+          regi_descricao,
+          regi_limite_faturamento_anual,
+          regi_tipo_emp_permitida,
+          regi_status
+        }
       });
 
     } catch (error) {
       return response.status(500).json({
         sucesso: false,
-        mensagem: `Erro ao atualizar regime: ${error.message}`
+        mensagem: `Erro ao atualizar regime: ${error.message}`,
+        dados: null
       });
     }
   },
@@ -246,8 +325,15 @@ module.exports = {
 
   async apagarRegime(request, response) {
     try {
-
       const { id } = request.params;
+
+      if (!id || isNaN(id)) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "ID inválido",
+          dados: null
+        });
+      }
 
       const [regime] = await db.query(
         "SELECT regi_id FROM REGIME WHERE regi_id = ?",
@@ -277,7 +363,8 @@ module.exports = {
     } catch (error) {
       return response.status(500).json({
         sucesso: false,
-        mensagem: `Erro ao excluir regime: ${error.message}`
+        mensagem: `Erro ao excluir regime: ${error.message}`,
+        dados: null
       });
     }
   },
@@ -285,8 +372,15 @@ module.exports = {
 
   async ocultarRegime(request, response) {
     try {
-
       const { id } = request.params;
+
+      if (!id || isNaN(id)) {
+        return response.status(400).json({
+          sucesso: false,
+          mensagem: "ID inválido",
+          dados: null
+        });
+      }
 
       const [regime] = await db.query(
         "SELECT regi_id FROM REGIME WHERE regi_id = ?",
@@ -311,13 +405,18 @@ module.exports = {
 
       return response.status(200).json({
         sucesso: true,
-        mensagem: "Regime ocultado com sucesso"
+        mensagem: "Regime ocultado com sucesso",
+        dados: {
+          id,
+          regi_status: 0
+        }
       });
 
     } catch (error) {
       return response.status(500).json({
         sucesso: false,
-        mensagem: `Erro ao ocultar regime: ${error.message}`
+        mensagem: `Erro ao ocultar regime: ${error.message}`,
+        dados: null
       });
     }
   }
