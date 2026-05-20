@@ -63,6 +63,24 @@ CREATE TABLE TIPO_DOCUMENTOS (
     tpd_status BIT NOT NULL -- 0-Inativo; 1-Ativo
 );
 
+CREATE TABLE DOCUMENTOS_ENVIADOS (
+    doc_id INT PRIMARY KEY AUTO_INCREMENT,
+    doc_caminho_arquivo VARCHAR(255) NOT NULL,
+    doc_nome_original VARCHAR(150) NOT NULL,
+    doc_data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    tpd_id INT NOT NULL,-- Chave Estrangeira que liga ao catálogo
+    FOREIGN KEY (tpd_id) REFERENCES TIPO_DOCUMENTOS(tpd_id) -- Liga o documento enviado ao seu tipo
+);
+
+CREATE TABLE FINANCEIRO (
+    fin_id INT PRIMARY KEY AUTO_INCREMENT,
+    doc_id INT NOT NULL,
+    fin_valor_total DECIMAL(10,2) NOT NULL,
+    fin_categoria ENUM('Faturamento', 'Imposto', 'Despesa') NOT NULL,
+    fin_data_emissao DATE,
+    FOREIGN KEY (doc_id) REFERENCES DOCUMENTOS_ENVIADOS(doc_id) ON DELETE CASCADE -- caso o arquivo for excluído, os dados serão excluídos também
+);
+
 CREATE TABLE DOCUMENTOS (
     doc_id INT PRIMARY KEY AUTO_INCREMENT,
     usu_id INT,
