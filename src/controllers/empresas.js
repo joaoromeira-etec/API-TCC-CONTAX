@@ -208,6 +208,49 @@ module.exports = {
             );
         }
     },
+    async cadastrarEmpresaEnderecos(requesr, response) {
+        try {
+            const {emp_id, emp_endereco, emp_municipio, principal} = request.body;
+            const end_excluido = false;
+            let end_principal = principal;
+
+            const sqlChecarEndereco = `SELECT COUNT(*) 
+                AS total_enderecos FROM emp_endereco
+                WHERE emp_id = ? AND end_excluid = false`;
+            const [resultCheck] = await db.query(sqlChecarEndereco, [usu_id]);
+            const totalEnderecos = resultCheck[0].total_enderecos;
+
+            if (totalEnderecos === 0) {
+                end_principal = true;
+            } else {
+                if (end_principal) {
+                    const sqlUpdateEnd = `UPDATE emp_endereco SET end_principal = 0 WHERE emp_id = ?`;
+                    await db.query(sqlUpdateEnd, [emp_id]);
+                }
+            }
+            const sql = `
+                INSERT INTO emp_endereco
+                    (emp_id, emp_endereco, emp_municipio, end_principal, end_excluido)
+                VALUES (?, ?, ?, ?, ?);
+            `;
+
+            const values = [emp_id, emp_endereco, emp_municipio, end_principal, end_excluido];
+            const [result] = await db.query(sql, values);
+            const end_id = result.insertId;
+
+            return response.status(200).json({
+                sucesso: true,
+                mensagem: 'Endereço cadastrado com sucesso',
+                dados: { id: end_id }
+            });
+        } catch (error) {
+            return response.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro ao cadastrar endereço.',
+                dados: error.message
+            });
+        }
+    },
     async editarEmpresas (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição

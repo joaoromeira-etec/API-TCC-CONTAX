@@ -256,8 +256,6 @@ async cadastrarUsuarios (request, response) {
             );
         }
 },
-async cadastrarEnderecoUsuarios (request, response) {
-},
  async editarUsuarios (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição
