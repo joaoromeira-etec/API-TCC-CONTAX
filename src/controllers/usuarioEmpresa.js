@@ -129,6 +129,14 @@ module.exports = {
                 });
             }
 
+            if (isNaN(emp_id) || isNaN(usu_id) || isNaN(nivel_acesso)) {
+                return response.status(400).json ({
+                    sucesso: false,
+                    mensagem: 'Id da empresa, id do usuário e nível de aceddo devem ser numéricos.',
+                    dados: null
+                });
+            }
+
             const sqlEmpresa = `SELECT usu_id FROM empresas WHERE emp_id = ?`;
             const [empResult] = await db.query(sqlEmpresa,[empresa]);
 
@@ -139,6 +147,24 @@ module.exports = {
                     dados: null
                 });
             }
+
+            //Verificar se a relação entre usuário e empresa já existe
+            const sqlVerificar = `
+                SELECT usu_emp_id FROM USUARIO_EMPRESAS
+                WHERE emp_id = ? AND usu_id = ?;
+            `;
+
+            const valuesVerificar = [emp_id, usu_id];
+            const [verificarResult] = await db.query(sqlVerificar, valuesVerificar);
+
+            if (verificarResult.length > 0) {
+                return response.status(400).json ({
+                    sucesso: false,
+                    mensagem: 'Relação entre usuário e empresa já existe.',
+                    dados: null
+                });
+            }
+
             const sql = `
             INSERT INTO USUARIO_EMPRESAS
                 (emp_id, usu_id, usu_emp_nivel_acesso, usu_emp_data_vinculo,
@@ -150,6 +176,8 @@ module.exports = {
             const values = [emp_id, usu_id, nivel_acesso,
                             data_vinculo, usu_emp_status, observacoes];
 
+            await db.query(sql, values);
+            
             const[result] = await db.query(sql, values);
             
             const dados = {

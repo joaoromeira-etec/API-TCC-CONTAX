@@ -263,6 +263,66 @@ module.exports = {
             );
         }
     },
+    async cadastrarVisualizador (request, responde) {
+        try {
+            const {
+                usu_nome,
+                usu_email,
+                usu_senha,
+                usu_cpf,
+                usu_telefone,
+                usu_emp_nivel_acesso,
+                usu_emp_id
+            } = request.body;
+            
+            if (
+                !usu_nome || !usu_email || !usu_senha || !usu_cpf ||
+                !usu_telefone || !usu_emp_nivel_acesso || !usu_emp_id
+            ) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Todos os campos são obrigatórios.',
+                    dados: null
+                });
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(usu_email)) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Email inválido.',
+                    dados: null
+                });
+            }
+
+            const cpf = cpfToInt(usu_cpf);
+                if (cpf.length !== 11 || isNaN(cpf)) {
+                    return response.status(400).json({
+                        sucesso: false,
+                        mensagem: 'CPF inválido.',
+                        dados: null
+                    });
+                }
+
+            const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!dataRegex.test(usu_emp_data_vinculo)) {
+                    return response.status(400).json({
+                        sucesso: false,
+                        mensagem: 'Data de vínculo deve estar no formato YYYY-MM-DD.',
+                        dados: null
+                    });
+                }
+
+            const telefoneRegex = cli_tel.replace (/|D/g, '');
+                if (telefoneRegex.length < 10 || telefoneRegex.length > 11) {
+                    return response.status(400).json({
+                        sucesso: false,
+                        mensagem: 'Telefone inválido.',
+                        dados: null
+                    });
+                }
+        }
+    },
     async editarUsuarios (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição

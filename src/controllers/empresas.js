@@ -229,7 +229,7 @@ module.exports = {
             );
         }
     },
-    async cadastrarEmpresaEnderecos(requesr, response) {
+    async cadastrarEmpresaEnderecos(request, response) {
         try {
             const {emp_id, emp_endereco, emp_municipio, principal} = request.body;
             const end_excluido = false;
