@@ -1,7 +1,7 @@
 const db = require('../dataBase/connection');
 
 module.exports = {
-async listarUsuarioEmpresa(request, response) {
+    async listarUsuarioEmpresa(request, response) {
     try {
         const {
             id,
@@ -112,7 +112,7 @@ async listarUsuarioEmpresa(request, response) {
             dados: null
         });
     }
-},
+    },
     async cadastrarUsuarioEmpresa (request, response) {
         try {
 
@@ -120,7 +120,25 @@ async listarUsuarioEmpresa(request, response) {
             const {emp_id, usu_id, nivel_acesso,
                    data_vinculo, observacoes} = request.body;
             const usu_emp_status = 1;
+            
+            if (!emp_id || !usu_id || !nivel_acesso || !data_vinculo || observacoes === undefined) {
+                return response.status(400).jsom ({
+                    sucesso: false,
+                    mensagem: 'Campos obrigatórios em incompletos ou errados.',
+                    dados: null
+                });
+            }
 
+            const sqlEmpresa = `SELECT usu_id FROM empresas WHERE emp_id = ?`;
+            const [empResult] = await db.query(sqlEmpresa,[empresa]);
+
+            if (empresaResult.legth === 0) {
+                return response.status(404).json ({
+                    sucesso: false,
+                    mensagem:'Empresa não encontrada.',
+                    dados: null
+                });
+            }
             const sql = `
             INSERT INTO USUARIO_EMPRESAS
                 (emp_id, usu_id, usu_emp_nivel_acesso, usu_emp_data_vinculo,

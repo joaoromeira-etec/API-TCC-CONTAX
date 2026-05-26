@@ -164,6 +164,27 @@ module.exports = {
         try {
 
             const {nome, razao_social, cnpj, endereco, municipio, telefone, email, tipo, senha} = request.body;
+            
+            if (!nome || !cnpj || !enredeco || !municipio || ! telefone || !email || !tipo || !senha) {
+                return response.status(400).json ({
+                    sucesso: false,
+                    mensagem: 'Campos obrigatóios estão ausentes ou inválidos.',
+                });
+            }
+
+            const sqlEmpresa = `SELECT emp_id FROM empresa WHERE emp_id =?`;
+            const [tipoResult] = await db.query(sqlEmpresa,[tipo]);
+
+            if (tipoResult.length === 0) {
+                return response.status(404).json ({
+                    sucesso: false,
+                    mensagem: 'Empresa não encontrada',
+                    dados: null
+                });
+            }
+
+            const documento = imagemDocumento ? 1 : 0;
+            const img_doc = imagemDocumento ? imagemDocumento : null;
             const emp_status = 1;
     
             const sql = `
