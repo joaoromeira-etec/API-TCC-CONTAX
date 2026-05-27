@@ -214,68 +214,7 @@ module.exports = {
     },       
     async cadastrarUsuarios (request, response) {
         try {
-            const {nome, email, cpf, senha, telefone, alterar_senha} = request.body;
-            const usu_status = 1;
-
-            if (!nome || !email || !cpf || !senha || !telefone === 'undefined') {
-                return response.status(400).json ({
-                    sucessso: false,
-                    mensagem: 'Campos obrigatórios estão ausentes ou inválidos.',
-                });
-            }
-            
-            const sql = `
-            INSERT INTO USUARIOS (usu_nome, usu_email, usu_cpf,
-                                  usu_senha_hash, usu_telefone,
-                                  usu_status, usu_alterar_senha)
-            VALUES 
-                (?, ?, ?, ?, ?, ?, ?);
-                `;
-            
-            const values = [nome, email, cpf, senha, telefone,usu_status, alterar_senha];
-           
-            const [result] = await db.query(sql, values);
-
-            const dados = {
-                id: result.insertId,
-                nome,
-                email,
-                cpf,
-                senha,
-                telefone,
-                alterar_senha
-            };
-
-            return response.status(200).json (
-                {
-                    sucesso: true,
-                    mensagem: 'Cadastro de usuário obtida com sucesso',
-                    dados: dados
-                }
-            );
-        } catch (error) {
-            return response.status (500).json (
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao cadastrar usuário:`,
-                    dados: error.message
-                }
-            );
-        }
-    },
-    async cadastrarVisualizador (request, responde) {
-        try {
-            const {
-                usu_nome,
-                usu_email,
-                usu_senha,
-                usu_cpf,
-                usu_telefone,
-                usu_emp_nivel_acesso,
-                usu_emp_id
-            } = request.body;
-            
-            if (
+           if (
                 !usu_nome || !usu_email || !usu_senha || !usu_cpf ||
                 !usu_telefone || !usu_emp_nivel_acesso || !usu_emp_id
             ) {
@@ -285,7 +224,7 @@ module.exports = {
                     dados: null
                 });
             }
-
+            
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(usu_email)) {
                 return response.status(400).json({
@@ -321,8 +260,79 @@ module.exports = {
                         dados: null
                     });
                 }
+            
+            const [emailExitente] = await db.query(
+                'SELECT usu_id FROM USUARIOS WHERE usu_email = ?',
+                [usu_email]
+            );
+            if (emailExitente.length > 0) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Email já cadastrado.',
+                    dados: null
+                });
+            }
+
+            const [cpfExiste] = await db.query(
+                'SELECT usu_id FROM USUARIOS WHERE usu_cpf = ?',
+                [cpf]            );
+            if (cpfExiste.length > 0) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'CPF já cadastrado.',
+                    dados: null
+                });
+            }
+            const {nome, email, cpf, senha, telefone, alterar_senha} = request.body;
+            const usu_status = 1;
+            
+            const sql = `
+            INSERT INTO USUARIOS (usu_nome, usu_email, usu_cpf,
+                                  usu_senha_hash, usu_telefone,
+                                  usu_status, usu_alterar_senha)
+            VALUES 
+                (?, ?, ?, ?, ?, ?, ?);
+                `;
+            
+            const sqlVisualizador = `
+            INSERT INTO USUARIO_EMPRESAS (usu_id, emp_id, usu_emp_nivel_acesso, usu_emp_status)
+            VALUES (?, ?, ?, ?);
+            `;
+
+            await db.query(sqlVisualizador, [result.insertId, usu_emp_id, usu_emp_nivel_acesso, 1]);
+
+            const values = [nome, email, cpf, senha, telefone,usu_status, alterar_senha];
+           
+            const [result] = await db.query(sql, values);
+
+            const dados = {
+                id: result.insertId,
+                nome,
+                email,
+                cpf,
+                senha,
+                telefone,
+                alterar_senha
+            };
+
+            return response.status(200).json (
+                {
+                    sucesso: true,
+                    mensagem: 'Cadastro de usuário obtida com sucesso',
+                    dados: dados
+                }
+            );
+        } catch (error) {
+            return response.status (500).json (
+                {
+                    sucesso: false,
+                    mensagem: `Erro ao cadastrar usuário:`,
+                    dados: error.message
+                }
+            );
         }
     },
+
     async editarUsuarios (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição
