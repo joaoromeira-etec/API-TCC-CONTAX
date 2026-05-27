@@ -224,7 +224,7 @@ module.exports = {
                     dados: null
                 });
             }
-            
+
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(usu_email)) {
                 return response.status(400).json({
@@ -234,23 +234,23 @@ module.exports = {
                 });
             }
 
-            const cpf = cpfToInt(usu_cpf);
-                if (cpf.length !== 11 || isNaN(cpf)) {
-                    return response.status(400).json({
-                        sucesso: false,
-                        mensagem: 'CPF inválido.',
-                        dados: null
-                    });
-                }
+            const cpfRegex = /^\d{11}$/;
+            if (!cpfRegex.test(usu_cpf)) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'CPF inválido.',
+                    dados: null
+                });
+            }
 
             const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
-                if (!dataRegex.test(usu_emp_data_vinculo)) {
-                    return response.status(400).json({
-                        sucesso: false,
-                        mensagem: 'Data de vínculo deve estar no formato YYYY-MM-DD.',
-                        dados: null
-                    });
-                }
+            if (!dataRegex.test(usu_emp_data_vinculo)) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Data de vínculo deve estar no formato YYYY-MM-DD.',
+                    dados: null
+                });
+            }
 
             const telefoneRegex = cli_tel.replace (/|D/g, '');
                 if (telefoneRegex.length < 10 || telefoneRegex.length > 11) {
@@ -275,7 +275,7 @@ module.exports = {
 
             const [cpfExiste] = await db.query(
                 'SELECT usu_id FROM USUARIOS WHERE usu_cpf = ?',
-                [cpf]            );
+                [usu_cpf]            );
             if (cpfExiste.length > 0) {
                 return response.status(400).json({
                     sucesso: false,
@@ -332,7 +332,6 @@ module.exports = {
             );
         }
     },
-
     async editarUsuarios (request, response) {
         try {
             // Parâmetros recebidos pelo corpo da requisição

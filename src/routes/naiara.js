@@ -6,8 +6,8 @@ const empresasController = require('../controllers/empresas');
 const usuarioEmpresaController = require('../controllers/usuarioEmpresa');
 
 router.get('/usuarios', usuariosController.listarUsuarios);
-router.get('/usuarios/:id', usuariosController.listarEmpresasDoUsuario);
 router.get('/usuarios/login', usuariosController.loginUsuarios);
+router.get('/usuarios/:id', usuariosController.listarEmpresasDoUsuario);
 router.post('/usuarios', usuariosController.cadastrarUsuarios);
 router.patch('/usuarios/:id', usuariosController.editarUsuarios);
 router.delete('/usuarios/:id', usuariosController.apagarUsuarios);
