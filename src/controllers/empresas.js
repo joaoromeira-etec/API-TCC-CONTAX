@@ -2,7 +2,36 @@ const db = require('../dataBase/connection');
 
 module.exports = {
     async listarEmpresas(request, response) {
+
+    const {id, nome, razao, cnpj, municipio, tipo, status, page = 1, limit = 5} = request.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
     try {
+        const [[{vlr_max}]] = await db.query (`
+            SELECT MAX(emp_id) AS vlr_max FROM EMPRESAS
+        `);
+        const valorLimite = parseFloat(valor ?? vlr_max);
+
+        const [[{ total }]] = await db.query(countQuery, countValues);
+
+        const listarQuery = `
+            SELECT e.emp_id, e.emp_nome_fantasia, e.emp_razao_social,
+                   e.emp_cnpj, e.emp_endereco, e.emp_municipio,
+                   e.emp_telefone,e.emp_email, e.emp_tipo
+            FROM EMPRESAS e
+            INNER JOIN emp_nome_fantasia ef ON e.emp_id = ef.emp_id
+            WHERE e.emp_status = ?
+                AND e.emp_id LIKE ?
+                AND e.emp_nome_fantasia LIKE ?
+                ${id ? 'AND e.emp_id = ?' : ''}
+                AND e.emp_razao_social LIKE ?
+            LIMIT ?, ?
+        `;
+
+        const listarValues = id
+            ? [status, `%${tipo ?? ''}%` `%${tipo ?? ''}%`, id, valorLimite, offset, parseInt(limit)]
+            : [status, `%${tipo ?? ''}%` `%${tipo ?? ''}%`, valorLimite, offset, parseInt(limit)];
+
         const {
             id,
             nome,
@@ -92,8 +121,6 @@ module.exports = {
             ...(tipo ? [tipo] : []),
             ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
         ];
-
-        const [[{ total }]] = await db.query(countQuery, countValues);
 
         response.setHeader('X-Total-Count', total);
 
