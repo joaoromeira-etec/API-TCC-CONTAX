@@ -1,4 +1,7 @@
-exports.processarDocumentosEnviados = (request, response) => {
+const db = require('../dataBase/connection');
+
+module.exports = {
+async processarDocumentosEnviados (request, response) {
     try {
         const {tpd_id} = request.body;
         const {path,originalname} = request.file;
@@ -18,4 +21,5 @@ exports.processarDocumentosEnviados = (request, response) => {
         } catch (error) {
             response.status(500).send(error.message);
     }
-};
+}
+}
