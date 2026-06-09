@@ -66,6 +66,17 @@ INSERT INTO DOCUMENTOS (doc_id, usu_id, emp_id, tpd_id, doc_arquivo_nome, doc_da
 (5, 5, 5, 5, 'comprovante1.pdf', '2023-05-09', 150.00, 1),
 (6, 6, 6, 6, 'outros1.pdf', '2023-06-09', 250.00, 1);
 
+-- Inserts pra FINANCEIRO
+INSERT INTO FINANCEIRO
+(fin_id, doc_id, fin_valor_total, fin_categoria, fin_data_emissao)
+VALUES
+(1, 1, 5000.00, 'Faturamento', '2026-06-01'),
+(2, 2, 1200.00, 'Imposto', '2026-06-05'),
+(3, 3, 800.00, 'Despesa', '2026-06-10'),
+(4, 4, 3500.00, 'Faturamento', '2026-06-12'),
+(5, 5, 400.00, 'Despesa', '2026-06-15'),
+(6, 6, 600.00, 'Imposto', '2026-06-18');
+
 -- Inserts para PRAZOS
 INSERT INTO PRAZOS (praz_id, emp_id, praz_descricao, praz_data_vencimento, praz_status) VALUES
 (1, 1, 'Entrega IRPJ', '2023-03-31', 0),
