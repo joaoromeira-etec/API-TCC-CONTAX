@@ -1,5 +1,32 @@
 const db = require('../dataBase/connection');
 
+/*
+--------------------------------------------------------------------------
+    Controller: Usuarios
+
+    Responsável pelo gerenciamento dos usuários do sistema CONTAX.
+
+    Tabela principal:
+    - USUARIOS
+
+    Funcionalidades:
+    - Listar usuários
+    - Realizar login
+    - Cadastrar usuários
+    - Editar usuários
+    - Ocultar usuários
+    - Excluir usuários
+    - Consultar empresas vinculadas ao usuário
+
+    Regras:
+    - Email e CPF devem ser únicos.
+    - Usuários podem estar vinculados a uma ou mais empresas.
+    - Usuários podem ser ativos ou inativos.
+    - O sistema pode exigir alteração de senha no primeiro acesso.
+    - Apenas usuários ativos podem realizar login.
+--------------------------------------------------------------------------
+*/
+
 module.exports = {
     async listarUsuarios(request, response) {
     try {
