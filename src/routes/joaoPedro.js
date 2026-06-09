@@ -5,6 +5,7 @@ const router = express.Router();
 const TipoDocumentosController = require('../controllers/tipoDocumentos');
 const DocumentosController = require('../controllers/documentos');
 const RegimeEmpresaController = require('../controllers/regimeEmpresa');
+const AdminController = require('../controllers/admin');
 
 // Rotas para Tipo de Documentos
 router.get('/tipoDocumentos', TipoDocumentosController.listarTipoDocumentos);
@@ -28,4 +29,12 @@ router.patch('/regimeEmpresa/:id', RegimeEmpresaController.editarRegimeEmpresa);
 router.delete('/regimeEmpresa/:id', RegimeEmpresaController.apagarRegimeEmpresa);
 router.delete('/regimeEmpresa/del/:id', RegimeEmpresaController.ocultarRegimeEmpresa);
 
-module.exports = router;
+// Rotas para o Administrador
+router.get('/admin/resumo', AdminController.listarResumoAdmin);
+router.get('/admin/empresas-risco', AdminController.listarEmpresasRisco);
+router.get('/admin/ultimos-documentos', AdminController.listarUltimosDocumentos);
+router.get('/admin/prazos-pendentes', AdminController.listarPrazosPendentes);
+router.get('/admin/auditoria-recente', AdminController.listarAuditoriaRecente);
+router.get('/admin/financeiro-mensal',AdminController.listarFinanceiroMensal);
+
+module.exports = router

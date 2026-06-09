@@ -212,173 +212,423 @@ module.exports = {
         });
     }
     },       
-    async cadastrarUsuarios (request, response) {
-        try {
-           if (
-                !usu_nome || !usu_email || !usu_senha || !usu_cpf ||
-                !usu_telefone || !usu_emp_nivel_acesso || !usu_emp_id
-            ) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'Todos os campos são obrigatórios.',
-                    dados: null
-                });
-            }
+    async cadastrarUsuarios(request, response) {
+    try {
+        const {
+            nome,
+            email,
+            cpf,
+            senha,
+            telefone,
+            alterar_senha,
+            emp_id,
+            nivel_acesso,
+            data_vinculo,
+            observacoes
+        } = request.body;
 
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(usu_email)) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'Email inválido.',
-                    dados: null
-                });
-            }
+        const usu_status = 1;
+        const usu_emp_status = 1;
 
-            const cpfRegex = /^\d{11}$/;
-            if (!cpfRegex.test(usu_cpf)) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'CPF inválido.',
-                    dados: null
-                });
-            }
-
-            const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dataRegex.test(usu_emp_data_vinculo)) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'Data de vínculo deve estar no formato YYYY-MM-DD.',
-                    dados: null
-                });
-            }
-
-            const telefoneRegex = cli_tel.replace (/|D/g, '');
-                if (telefoneRegex.length < 10 || telefoneRegex.length > 11) {
-                    return response.status(400).json({
-                        sucesso: false,
-                        mensagem: 'Telefone inválido.',
-                        dados: null
-                    });
-                }
-            
-            const [emailExitente] = await db.query(
-                'SELECT usu_id FROM USUARIOS WHERE usu_email = ?',
-                [usu_email]
-            );
-            if (emailExitente.length > 0) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'Email já cadastrado.',
-                    dados: null
-                });
-            }
-
-            const [cpfExiste] = await db.query(
-                'SELECT usu_id FROM USUARIOS WHERE usu_cpf = ?',
-                [usu_cpf]            );
-            if (cpfExiste.length > 0) {
-                return response.status(400).json({
-                    sucesso: false,
-                    mensagem: 'CPF já cadastrado.',
-                    dados: null
-                });
-            }
-            const {nome, email, cpf, senha, telefone, alterar_senha} = request.body;
-            const usu_status = 1;
-            
-            const sql = `
-            INSERT INTO USUARIOS (usu_nome, usu_email, usu_cpf,
-                                  usu_senha_hash, usu_telefone,
-                                  usu_status, usu_alterar_senha)
-            VALUES 
-                (?, ?, ?, ?, ?, ?, ?);
-                `;
-            
-            const sqlVisualizador = `
-            INSERT INTO USUARIO_EMPRESAS (usu_id, emp_id, usu_emp_nivel_acesso, usu_emp_status)
-            VALUES (?, ?, ?, ?);
-            `;
-
-            await db.query(sqlVisualizador, [result.insertId, usu_emp_id, usu_emp_nivel_acesso, 1]);
-
-            const values = [nome, email, cpf, senha, telefone,usu_status, alterar_senha];
-           
-            const [result] = await db.query(sql, values);
-
-            const dados = {
-                id: result.insertId,
-                nome,
-                email,
-                cpf,
-                senha,
-                telefone,
-                alterar_senha
-            };
-
-            return response.status(200).json (
-                {
-                    sucesso: true,
-                    mensagem: 'Cadastro de usuário obtida com sucesso',
-                    dados: dados
-                }
-            );
-        } catch (error) {
-            return response.status (500).json (
-                {
-                    sucesso: false,
-                    mensagem: `Erro ao cadastrar usuário:`,
-                    dados: error.message
-                }
-            );
+        // 1. Validação de campos obrigatórios
+        if (
+            !nome ||
+            !email ||
+            !cpf ||
+            !senha ||
+            !telefone ||
+            emp_id === undefined ||
+            nivel_acesso === undefined ||
+            !data_vinculo
+        ) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Campos obrigatórios incompletos ou inválidos.',
+                dados: null
+            });
         }
-    },
-    async editarUsuarios (request, response) {
-        try {
-            // Parâmetros recebidos pelo corpo da requisição
-            const {nome, email, cpf, senha, telefone, status} = request.body;
-            //Parâmetro recebido pela URL via params ex: /usuario/1
-            const {id} = request.params;
-            //instruções SQL
-            const sql = `
-                UPDATE usuarios SET
-                    usu_nome = ?, usu_email = ?, usu_cpf = ?,
-                    usu_senha_hash = ?, usu_telefone = ?, usu_status = ?
-                WHERE
-                    usu_id = ?;
-                `;
-                //Preparo do array com dados que serão atualizados
-                const values = [nome, email, cpf, senha, telefone, status, id];
-                //execução e obtenção de confirmação da atualização realizada
-                const [result] = await db.query(sql, values);
 
-                if (result.affectedRows === 0) {
-                    return response.status(404).json ({
-                        sucesso: false,
-                        mensagem: `Usuário ${id} não encontrado`,
-                        dados: null
-                    });
-                }
-                const dados = {
-                    id,
-                    nome,
-                    email,
-                    cpf,
-                    telefone
-                };
-            return response.status(200).json ({
-                    sucesso: true,
-                    mensagem: `Usuário ${id} atualizado com sucesso`,
-                    dados
-                });
-
-        } catch (error) {
-            return response.status (500).json ({
-                    sucesso: false,
-                    mensagem: `Erro na requisição`,
-                    dados: error.message
-                });
+        // 2. Validação de dados numéricos
+        if (isNaN(emp_id) || isNaN(nivel_acesso)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'ID da empresa e nível de acesso devem ser numéricos.',
+                dados: null
+            });
         }
-    },
+
+        // 3. Validação de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Email inválido.',
+                dados: null
+            });
+        }
+
+        // 4. Validação de CPF
+        const cpfLimpo = cpf.replace(/\D/g, '');
+        const cpfRegex = /^\d{11}$/;
+
+        if (!cpfRegex.test(cpfLimpo)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'CPF inválido. Informe 11 números.',
+                dados: null
+            });
+        }
+
+        // 5. Validação de telefone
+        const telefoneLimpo = telefone.replace(/\D/g, '');
+
+        if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Telefone inválido.',
+                dados: null
+            });
+        }
+
+        // 6. Validação de data de vínculo
+        const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+        if (!dataRegex.test(data_vinculo)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Data de vínculo deve estar no formato YYYY-MM-DD.',
+                dados: null
+            });
+        }
+
+        // Consulta empresa
+        const sqlEmpresa = `
+            SELECT emp_id
+            FROM EMPRESAS
+            WHERE emp_id = ?
+        `;
+
+        const [empresaResult] = await db.query(sqlEmpresa, [emp_id]);
+
+        // 7. Validação de existência da empresa
+        if (empresaResult.length === 0) {
+            return response.status(404).json({
+                sucesso: false,
+                mensagem: 'Empresa não encontrada.',
+                dados: null
+            });
+        }
+
+        // Consulta email existente
+        const sqlEmail = `
+            SELECT usu_id
+            FROM USUARIOS
+            WHERE usu_email = ?
+        `;
+
+        const [emailExistente] = await db.query(sqlEmail, [email]);
+
+        // 8. Validação de email duplicado
+        if (emailExistente.length > 0) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Email já cadastrado.',
+                dados: null
+            });
+        }
+
+        // Consulta CPF existente
+        const sqlCpf = `
+            SELECT usu_id
+            FROM USUARIOS
+            WHERE usu_cpf = ?
+        `;
+
+        const [cpfExistente] = await db.query(sqlCpf, [cpfLimpo]);
+
+        // 9. Validação de CPF duplicado
+        if (cpfExistente.length > 0) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'CPF já cadastrado.',
+                dados: null
+            });
+        }
+
+        // Cadastro do usuário
+        const sqlUsuario = `
+            INSERT INTO USUARIOS
+                (
+                    usu_nome,
+                    usu_email,
+                    usu_cpf,
+                    usu_senha_hash,
+                    usu_telefone,
+                    usu_status,
+                    usu_alterar_senha
+                )
+            VALUES
+                (?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const valuesUsuario = [
+            nome,
+            email,
+            cpfLimpo,
+            senha,
+            telefoneLimpo,
+            usu_status,
+            alterar_senha ?? 0
+        ];
+
+        const [resultUsuario] = await db.query(sqlUsuario, valuesUsuario);
+
+        // Cadastro do vínculo usuário x empresa
+        const sqlVinculo = `
+            INSERT INTO USUARIO_EMPRESAS
+                (
+                    usu_id,
+                    emp_id,
+                    usu_emp_nivel_acesso,
+                    usu_emp_data_vinculo,
+                    usu_emp_status,
+                    usu_emp_observacoes
+                )
+            VALUES
+                (?, ?, ?, ?, ?, ?)
+        `;
+
+        const valuesVinculo = [
+            resultUsuario.insertId,
+            emp_id,
+            nivel_acesso,
+            data_vinculo,
+            usu_emp_status,
+            observacoes ?? null
+        ];
+
+        await db.query(sqlVinculo, valuesVinculo);
+
+        const dados = {
+            id: resultUsuario.insertId,
+            nome,
+            email,
+            cpf: cpfLimpo,
+            telefone: telefoneLimpo,
+            status: usu_status,
+            alterar_senha: alterar_senha ?? 0,
+            empresa: {
+                emp_id,
+                nivel_acesso,
+                data_vinculo,
+                observacoes: observacoes ?? null
+            }
+        };
+
+        return response.status(201).json({
+            sucesso: true,
+            mensagem: 'Usuário cadastrado e vinculado à empresa com sucesso.',
+            dados
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro ao cadastrar usuário.',
+            dados: error.message
+        });
+    }
+},
+    async editarUsuarios(request, response) {
+    try {
+        const {
+            nome,
+            email,
+            cpf,
+            senha,
+            telefone,
+            status,
+            alterar_senha
+        } = request.body;
+
+        const { id } = request.params;
+
+        // 1. Validação de ID
+        if (!id || isNaN(id)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'ID do usuário inválido.',
+                dados: null
+            });
+        }
+
+        // 2. Validação de campos obrigatórios
+        if (
+            !nome ||
+            !email ||
+            !cpf ||
+            !senha ||
+            !telefone ||
+            status === undefined ||
+            alterar_senha === undefined
+        ) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Campos obrigatórios incompletos ou inválidos.',
+                dados: null
+            });
+        }
+
+        // 3. Validação de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(email)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Email inválido.',
+                dados: null
+            });
+        }
+
+        // 4. Validação de CPF
+        const cpfLimpo = cpf.replace(/\D/g, '');
+        const cpfRegex = /^\d{11}$/;
+
+        if (!cpfRegex.test(cpfLimpo)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'CPF inválido. Informe 11 números.',
+                dados: null
+            });
+        }
+
+        // 5. Validação de telefone
+        const telefoneLimpo = telefone.replace(/\D/g, '');
+
+        if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Telefone inválido.',
+                dados: null
+            });
+        }
+
+        // Consulta usuário
+        const sqlUsuario = `
+            SELECT usu_id
+            FROM USUARIOS
+            WHERE usu_id = ?
+        `;
+
+        const [usuarioResult] = await db.query(sqlUsuario, [id]);
+
+        // 6. Validação de existência do usuário
+        if (usuarioResult.length === 0) {
+            return response.status(404).json({
+                sucesso: false,
+                mensagem: 'Usuário não encontrado.',
+                dados: null
+            });
+        }
+
+        // Consulta email existente em outro usuário
+        const sqlEmail = `
+            SELECT usu_id
+            FROM USUARIOS
+            WHERE usu_email = ?
+            AND usu_id <> ?
+        `;
+
+        const [emailExistente] = await db.query(sqlEmail, [email, id]);
+
+        // 7. Validação de email duplicado
+        if (emailExistente.length > 0) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Email já cadastrado para outro usuário.',
+                dados: null
+            });
+        }
+
+        // Consulta CPF existente em outro usuário
+        const sqlCpf = `
+            SELECT usu_id
+            FROM USUARIOS
+            WHERE usu_cpf = ?
+            AND usu_id <> ?
+        `;
+
+        const [cpfExistente] = await db.query(sqlCpf, [cpfLimpo, id]);
+
+        // 8. Validação de CPF duplicado
+        if (cpfExistente.length > 0) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'CPF já cadastrado para outro usuário.',
+                dados: null
+            });
+        }
+
+        // Atualização do usuário
+        const sql = `
+            UPDATE USUARIOS
+            SET
+                usu_nome = ?,
+                usu_email = ?,
+                usu_cpf = ?,
+                usu_senha_hash = ?,
+                usu_telefone = ?,
+                usu_status = ?,
+                usu_alterar_senha = ?
+            WHERE usu_id = ?
+        `;
+
+        const values = [
+            nome,
+            email,
+            cpfLimpo,
+            senha,
+            telefoneLimpo,
+            status,
+            alterar_senha,
+            id
+        ];
+
+        const [result] = await db.query(sql, values);
+
+        if (result.affectedRows === 0) {
+            return response.status(404).json({
+                sucesso: false,
+                mensagem: 'Usuário não encontrado.',
+                dados: null
+            });
+        }
+
+        const dados = {
+            id,
+            nome,
+            email,
+            cpf: cpfLimpo,
+            telefone: telefoneLimpo,
+            status,
+            alterar_senha
+        };
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: `Usuário ${id} atualizado com sucesso.`,
+            dados
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro ao editar usuário.',
+            dados: error.message
+        });
+    }
+},
     async apagarUsuarios (request, response) {
         try {
             //Parâmetro passado via url na chamada da api pelo front-end
@@ -433,7 +683,7 @@ module.exports = {
             }
 
             //2. Verificar se já está oculto
-            if (rows[0].usu_emp_status === 0) {
+            if (rows[0].usu_status === 0) {
                 return response.status(400).json ({
                     sucesso: false,
                     mensagem: `Usuário já inativo`,
