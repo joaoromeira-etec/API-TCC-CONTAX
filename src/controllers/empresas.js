@@ -2,36 +2,7 @@ const db = require('../dataBase/connection');
 
 module.exports = {
     async listarEmpresas(request, response) {
-
-    const {id, nome, razao, cnpj, municipio, tipo, status, page = 1, limit = 5} = request.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-
     try {
-        const [[{vlr_max}]] = await db.query (`
-            SELECT MAX(emp_id) AS vlr_max FROM EMPRESAS
-        `);
-        const valorLimite = parseFloat(valor ?? vlr_max);
-
-        const [[{ total }]] = await db.query(countQuery, countValues);
-
-        const listarQuery = `
-            SELECT e.emp_id, e.emp_nome_fantasia, e.emp_razao_social,
-                   e.emp_cnpj, e.emp_endereco, e.emp_municipio,
-                   e.emp_telefone,e.emp_email, e.emp_tipo
-            FROM EMPRESAS e
-            INNER JOIN emp_nome_fantasia ef ON e.emp_id = ef.emp_id
-            WHERE e.emp_status = ?
-                AND e.emp_id LIKE ?
-                AND e.emp_nome_fantasia LIKE ?
-                ${id ? 'AND e.emp_id = ?' : ''}
-                AND e.emp_razao_social LIKE ?
-            LIMIT ?, ?
-        `;
-
-        const listarValues = id
-            ? [status, `%${tipo ?? ''}%` `%${tipo ?? ''}%`, id, valorLimite, offset, parseInt(limit)]
-            : [status, `%${tipo ?? ''}%` `%${tipo ?? ''}%`, valorLimite, offset, parseInt(limit)];
-
         const {
             id,
             nome,
@@ -50,7 +21,10 @@ module.exports = {
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
         const [[{ id_min, id_max }]] = await db.query(`
-            SELECT MIN(emp_id) AS id_min, MAX(emp_id) AS id_max FROM EMPRESAS
+            SELECT 
+                MIN(emp_id) AS id_min, 
+                MAX(emp_id) AS id_max 
+            FROM EMPRESAS
         `);
 
         const idMinLimite = idMin ?? id_min ?? 0;
@@ -62,7 +36,7 @@ module.exports = {
 
         const statusFiltro = status !== undefined ? parseInt(status) : 1;
 
-        let sql = `
+        const sql = `
             SELECT
                 emp_id,
                 emp_nome_fantasia,
@@ -72,7 +46,8 @@ module.exports = {
                 emp_municipio,
                 emp_telefone,
                 emp_email,
-                CAST(emp_tipo AS UNSIGNED) AS emp_tipo
+                CAST(emp_tipo AS UNSIGNED) AS emp_tipo,
+                CAST(emp_status AS UNSIGNED) AS emp_status
             FROM EMPRESAS
             WHERE 1=1
             AND emp_nome_fantasia LIKE ?
@@ -80,7 +55,7 @@ module.exports = {
             AND emp_municipio LIKE ?
             AND emp_status = ?
             ${cnpj ? 'AND emp_cnpj = ?' : ''}
-            ${tipo ? 'AND emp_tipo = ?' : ''}
+            ${tipo !== undefined ? 'AND emp_tipo = ?' : ''}
             ${id ? 'AND emp_id = ?' : 'AND emp_id BETWEEN ? AND ?'}
             LIMIT ?, ?
         `;
@@ -91,7 +66,7 @@ module.exports = {
             emp_municipio,
             statusFiltro,
             ...(cnpj ? [cnpj] : []),
-            ...(tipo ? [tipo] : []),
+            ...(tipo !== undefined ? [parseInt(tipo)] : []),
             ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
             offset,
             parseInt(limit)
@@ -108,7 +83,7 @@ module.exports = {
             AND emp_municipio LIKE ?
             AND emp_status = ?
             ${cnpj ? 'AND emp_cnpj = ?' : ''}
-            ${tipo ? 'AND emp_tipo = ?' : ''}
+            ${tipo !== undefined ? 'AND emp_tipo = ?' : ''}
             ${id ? 'AND emp_id = ?' : 'AND emp_id BETWEEN ? AND ?'}
         `;
 
@@ -118,15 +93,17 @@ module.exports = {
             emp_municipio,
             statusFiltro,
             ...(cnpj ? [cnpj] : []),
-            ...(tipo ? [tipo] : []),
+            ...(tipo !== undefined ? [parseInt(tipo)] : []),
             ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite])
         ];
+
+        const [[{ total }]] = await db.query(countQuery, countValues);
 
         response.setHeader('X-Total-Count', total);
 
         return response.status(200).json({
             sucesso: true,
-            mensagem: 'Lista de empresas',
+            mensagem: 'Lista de empresas.',
             nItens: rows.length,
             dados: rows
         });
@@ -134,11 +111,11 @@ module.exports = {
     } catch (error) {
         return response.status(500).json({
             sucesso: false,
-            mensagem: `Erro ao listar empresas: ${error.message}`,
-            dados: null
+            mensagem: 'Erro ao listar empresas.',
+            dados: error.message
         });
     }
-    },
+},
     async loginEmpresas (request, response) {
     try {
 
