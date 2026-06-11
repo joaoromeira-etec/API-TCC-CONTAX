@@ -4,6 +4,8 @@ const router = express.Router();
 const usuariosController = require('../controllers/usuarios');
 const empresasController = require('../controllers/empresas');
 const usuarioEmpresaController = require('../controllers/usuarioEmpresa');
+const financeiroController = require('../controllers/financeiro');
+const { route } = require('./joaoPedro');
 
 router.get('/usuarios', usuariosController.listarUsuarios);
 router.get('/usuarios/login', usuariosController.loginUsuarios);
@@ -21,6 +23,8 @@ router.post('/empresas/enderecos:id', empresasController.cadastrarEmpresaEnderec
 router.patch('/empresas/:id', empresasController.editarEmpresas);
 router.delete('/empresas/:id', empresasController.apagarEmpresas);
 router.delete('/empresas/del/:id', empresasController.ocultarEmpresas);
+
+router.get('/financeiro', financeiroController.listarFinanceiro);
 
 
 router.get('/usuario_empresas', usuarioEmpresaController.listarUsuarioEmpresa);

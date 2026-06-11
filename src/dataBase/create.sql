@@ -63,14 +63,6 @@ CREATE TABLE TIPO_DOCUMENTOS (
     tpd_status BIT NOT NULL -- 0-Inativo; 1-Ativo
 );
 
-CREATE TABLE DOCUMENTOS_ENVIADOS (
-    doc_id INT PRIMARY KEY AUTO_INCREMENT,
-    doc_caminho_arquivo VARCHAR(255) NOT NULL,
-    doc_nome_original VARCHAR(150) NOT NULL,
-    doc_data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    tpd_id INT NOT NULL,-- Chave Estrangeira que liga ao catálogo
-    FOREIGN KEY (tpd_id) REFERENCES TIPO_DOCUMENTOS(tpd_id) -- Liga o documento enviado ao seu tipo
-);
 
 CREATE TABLE FINANCEIRO (
     fin_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -78,7 +70,7 @@ CREATE TABLE FINANCEIRO (
     fin_valor_total DECIMAL(10,2) NOT NULL,
     fin_categoria ENUM('Faturamento', 'Imposto', 'Despesa') NOT NULL,
     fin_data_emissao DATE,
-    FOREIGN KEY (doc_id) REFERENCES DOCUMENTOS_ENVIADOS(doc_id) ON DELETE CASCADE -- caso o arquivo for excluído, os dados serão excluídos também
+    FOREIGN KEY (doc_id) REFERENCES DOCUMENTOS(doc_id) ON DELETE CASCADE
 );
 
 CREATE TABLE DOCUMENTOS (
@@ -86,9 +78,9 @@ CREATE TABLE DOCUMENTOS (
     usu_id INT,
     emp_id INT,
     tpd_id INT,
-    doc_arquivo_nome VARCHAR(100) NOT NULL,
-    doc_data_emissao DATE NOT NULL,
-    doc_valor DECIMAL(12,2) NOT NULL,
+    doc_caminho_arquivo VARCHAR(255) NOT NULL,
+    doc_nome_original VARCHAR(150) NOT NULL,
+    doc_data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     doc_status BIT NOT NULL, -- 0-Inativo; 1-Ativo
     FOREIGN KEY (usu_id) REFERENCES USUARIOS(usu_id),
     FOREIGN KEY (emp_id) REFERENCES EMPRESAS(emp_id),
