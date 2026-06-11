@@ -58,18 +58,18 @@ INSERT INTO TIPO_DOCUMENTOS (tpd_id, tpd_descricao, tpd_status) VALUES
 (6, 'Outros', 1);
 
 -- Inserts para DOCUMENTOS
-INSERT INTO DOCUMENTOS (doc_id, usu_id, emp_id, tpd_id, doc_arquivo_nome, doc_data_emissao, doc_valor, doc_status) VALUES
-(1, 1, 1, 1, 'nf1.pdf', '2023-01-09', 1000.00, 1),
-(2, 2, 2, 2, 'recibo1.pdf', '2023-02-09', 500.00, 1),
-(3, 3, 3, 3, 'contrato1.pdf', '2023-03-09', 2000.00, 1),
-(4, 4, 4, 4, 'boleto1.pdf', '2023-04-09', 300.00, 1),
-(5, 5, 5, 5, 'comprovante1.pdf', '2023-05-09', 150.00, 1),
-(6, 6, 6, 6, 'outros1.pdf', '2023-06-09', 250.00, 1);
+INSERT INTO DOCUMENTOS
+(doc_id, usu_id, emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_data_upload, doc_status) VALUES
+(1, 1, 1, 1, 'uploads/nf1.pdf', 'nf1.pdf', '2023-01-09 08:00:00', 1),
+(2, 2, 2, 2, 'uploads/recibo1.pdf', 'recibo1.pdf', '2023-02-09 08:00:00', 1),
+(3, 3, 3, 3, 'uploads/contrato1.pdf', 'contrato1.pdf', '2023-03-09 08:00:00', 1),
+(4, 4, 4, 4, 'uploads/boleto1.pdf', 'boleto1.pdf', '2023-04-09 08:00:00', 1),
+(5, 5, 5, 5, 'uploads/comprovante1.pdf', 'comprovante1.pdf', '2023-05-09 08:00:00', 1),
+(6, 6, 6, 6, 'uploads/outros1.pdf', 'outros1.pdf', '2023-06-09 08:00:00', 1);
 
 -- Inserts pra FINANCEIRO
 INSERT INTO FINANCEIRO
-(fin_id, doc_id, fin_valor_total, fin_categoria, fin_data_emissao)
-VALUES
+(fin_id, doc_id, fin_valor_total, fin_categoria, fin_data_emissao) VALUES
 (1, 1, 5000.00, 'Faturamento', '2026-06-01'),
 (2, 2, 1200.00, 'Imposto', '2026-06-05'),
 (3, 3, 800.00, 'Despesa', '2026-06-10'),
