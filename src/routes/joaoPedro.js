@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+
+const upload = multer({
+    dest: 'uploads/'
+});
 
 // Importe dos controllers
 const TipoDocumentosController = require('../controllers/tipoDocumentos');
 const DocumentosController = require('../controllers/documentos');
+const DocumentosEnviadosController = require('../controllers/documentosEnviados');
 const RegimeEmpresaController = require('../controllers/regimeEmpresa');
 const AdminController = require('../controllers/admin');
 
@@ -21,6 +27,8 @@ router.post('/documentos', DocumentosController.cadastrarDocumentos);
 router.patch('/documentos/:id', DocumentosController.editarDocumentos);
 router.delete('/documentos/:id', DocumentosController.apagarDocumentos); //Não-Recomendado.
 router.delete('/documentos/del/:id', DocumentosController.ocultarDocumentos); //Recomendado.
+// Rota para Documentos enviados
+router.post('/documentosEnviados',upload.single('arquivo'),DocumentosEnviadosController.processarDocumentosEnviados);
 
 // Rotas para Regime da Empresa
 router.get('/regimeEmpresa', RegimeEmpresaController.listarRegimeEmpresa);
