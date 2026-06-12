@@ -1,5 +1,5 @@
 const db = require('../dataBase/connection');
-const { gerarURL } = require ('../uploads/gerarURL');
+const { gerarURL } = require('../../uploads/gerarURl');
 
 module.exports = {
 async listarDocumentos(request, response) {

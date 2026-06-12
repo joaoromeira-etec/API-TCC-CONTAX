@@ -107,30 +107,45 @@ module.exports = {
                     e.emp_id,
                     e.emp_nome_fantasia,
                     e.emp_tipo,
-                    COALESCE(SUM(d.doc_valor), 0) AS faturamentoAtual,
+
+                    COALESCE(SUM(f.fin_valor_total), 0) AS faturamentoAtual,
+
                     CASE
                         WHEN e.emp_tipo = 1 THEN 6750.00
                         ELSE 20000.00
                     END AS limiteMensal,
+
                     CASE
-                        WHEN COALESCE(SUM(d.doc_valor), 0) >= 
+                        WHEN COALESCE(SUM(f.fin_valor_total), 0) >= 
                             CASE WHEN e.emp_tipo = 1 THEN 6750.00 ELSE 20000.00 END * 0.8
                             THEN 'Risco'
-                        WHEN COALESCE(SUM(d.doc_valor), 0) >= 
+
+                        WHEN COALESCE(SUM(f.fin_valor_total), 0) >= 
                             CASE WHEN e.emp_tipo = 1 THEN 6750.00 ELSE 20000.00 END * 0.5
                             THEN 'Atenção'
+
                         ELSE 'Saudável'
                     END AS situacao
-                FROM EMPRESAS e
-                LEFT JOIN DOCUMENTOS d
+
+                 FROM EMPRESAS e
+
+                 LEFT JOIN DOCUMENTOS d
                     ON d.emp_id = e.emp_id
                     AND d.doc_status = 1
-                    AND MONTH(d.doc_data_emissao) = MONTH(CURRENT_DATE())
-                    AND YEAR(d.doc_data_emissao) = YEAR(CURRENT_DATE())
-                WHERE e.emp_status = 1
-                GROUP BY e.emp_id
-                ORDER BY faturamentoAtual DESC
-            `;
+
+                 LEFT JOIN FINANCEIRO f
+                    ON f.doc_id = d.doc_id
+                    AND f.fin_categoria = 'Faturamento'
+                    AND YEAR(f.fin_data_emissao) = YEAR(CURRENT_DATE())
+                    AND MONTH(f.fin_data_emissao) = MONTH(CURRENT_DATE())
+                    AND f.fin_status = 1
+
+                 WHERE e.emp_status = 1
+
+                 GROUP BY e.emp_id
+
+                 ORDER BY faturamentoAtual DESC
+                `;
 
             const [rows] = await db.query(sql);
 
@@ -157,18 +172,32 @@ module.exports = {
             const sql = `
                 SELECT
                     d.doc_id,
-                    d.doc_arquivo_nome,
-                    d.doc_data_emissao,
-                    d.doc_valor,
+                    d.doc_nome_original,
+                    d.doc_data_upload,
+
+                    f.fin_valor_total,
+                    f.fin_categoria,
+                    f.fin_data_emissao,
+
                     e.emp_nome_fantasia,
-                    t.tpd_descricao
+                    t.tpd_descricao 
+
                 FROM DOCUMENTOS d
+
                 INNER JOIN EMPRESAS e
                     ON e.emp_id = d.emp_id
+
                 INNER JOIN TIPO_DOCUMENTOS t
                     ON t.tpd_id = d.tpd_id
+
+                LEFT JOIN FINANCEIRO f
+                    ON f.doc_id = d.doc_id
+
                 WHERE d.doc_status = 1
-                ORDER BY d.doc_data_emissao DESC, d.doc_id DESC
+                
+                ORDER BY d.doc_data_upload DESC, 
+                         d.doc_id DESC
+
                 LIMIT ?
             `;
 
