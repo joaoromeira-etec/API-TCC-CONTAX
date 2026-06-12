@@ -1,4 +1,5 @@
 const db = require('../dataBase/connection');
+const { gerarURL } = require ('../uploads/gerarURL');
 
 module.exports = {
 async listarDocumentos(request, response) {
@@ -90,6 +91,13 @@ async listarDocumentos(request, response) {
         ];
 
         const [rows] = await db.query(sql, values);
+        const nItens = rows.length;
+
+        //Alternativa sem mexer com todos os campos
+        const dados = rows.map(upload => ({
+            ...documento,
+            doc_img: gerarURL(ingrediente.doc_img, 'documentos', 'sem.jpg')
+        }))
 
         const countQuery = `
             SELECT COUNT(*) AS total
@@ -123,8 +131,8 @@ async listarDocumentos(request, response) {
         return response.status(200).json({
             sucesso: true,
             mensagem: 'Lista de documentos.',
-            nItens: rows.length,
-            dados: rows
+            nItens,
+            dados
         });
 
     } catch (error) {
