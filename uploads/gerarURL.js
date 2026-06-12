@@ -3,13 +3,16 @@ const path = require('path');
 const { URL } = require('url'); //Módulo nativo do Node.js para trbalhar com URLs
 
 const PUBLIC_ROOT_PATH = path.join(process.cwd(), 'public');
-const API_URL = process.env.API_URL || 'http://localhost:3333';
+const API_URL = process.env.API_BASE_URL || 'http://localhost:3333';
 
 //@returns {string} A URL completa e formatada
 
 function gerarURL(nomeArquivo, pasta, arquivoPadrao) {
     const arquivoVerificar = nomeArquivo || arquivoPadrao;
     const caminhoFisico = path.join(PUBLIC_ROOT_PATH, pasta, arquivoVerificar);
+
+    console.log("Caminho Físico sendo testado:", caminhoFisico);
+    console.log("O arquivo realmente existe lá?", fse.existsSync(caminhoFisico));
 
     let caminhoRelativo;
 

@@ -94,9 +94,10 @@ async listarDocumentos(request, response) {
         const nItens = rows.length;
 
         //Alternativa sem mexer com todos os campos
-        const dados = rows.map(upload => ({
-            ...documento,
-            doc_img: gerarURL(ingrediente.doc_img, 'documentos', 'sem.jpg')
+        const dados = rows.map(documentos => ({
+            id: documentos.doc_id,
+            nome: documentos.doc_nome_original,
+            doc_img: gerarURL(documentos.doc_img, 'documentos', 'sem.jpg')
         }))
 
         const countQuery = `
@@ -593,5 +594,6 @@ async ocultarDocumentos(request, response) {
             dados: error.message
         });
     }
- }
+ },
+
 }
