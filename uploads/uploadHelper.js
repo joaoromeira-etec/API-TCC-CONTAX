@@ -7,4 +7,5 @@ const uploadImage = (destinationFolder) => {
     if (!destinationFolder) {
         throw new Error("A pasta de destino é obrigatória para o upload.");
 }
+
 }
