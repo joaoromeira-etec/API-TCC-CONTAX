@@ -93,12 +93,14 @@ async listarDocumentos(request, response) {
         const [rows] = await db.query(sql, values);
         const nItens = rows.length;
 
-        //Alternativa sem mexer com todos os campos
-        const dados = rows.map(documentos => ({
-            id: documentos.doc_id,
-            nome: documentos.doc_nome_original,
-            doc_img: gerarURL(documentos.doc_img, 'documentos', 'sem.jpg')
-        }))
+        const dados = rows.map((documento) => ({
+            ...documento,
+            doc_url: gerarURL(
+                documento.doc_caminho_arquivo,
+                'documentos',
+                'sem.jpg'
+            )
+        }));
 
         const countQuery = `
             SELECT COUNT(*) AS total
