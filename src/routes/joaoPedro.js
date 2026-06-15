@@ -11,6 +11,8 @@ const TipoDocumentosController = require('../controllers/tipoDocumentos');
 const DocumentosController = require('../controllers/documentos');
 const RegimeEmpresaController = require('../controllers/regimeEmpresa');
 const AdminController = require('../controllers/admin');
+//const uploadImage = require('../middleware/uploadHelper');
+//const uploadDocumentos = uploadImage('documentos');
 
 // Rotas para Tipo de Documentos
 router.get('/tipoDocumentos', TipoDocumentosController.listarTipoDocumentos);
@@ -22,7 +24,7 @@ router.delete('/tipoDocumentos/del/:id', TipoDocumentosController.ocultarTipoDoc
 
 // Rotas para Documentos
 router.get('/documentos', DocumentosController.listarDocumentos);
-router.post('/documentos',upload.single('arquivo'),DocumentosController.cadastrarDocumentos);
+router.post('/documentos',upload.single('img'),DocumentosController.cadastrarDocumentos);
 router.patch('/documentos/:id', upload.single('arquivo'), DocumentosController.editarDocumentos);
 router.delete('/documentos/:id', DocumentosController.apagarDocumentos); //Não-Recomendado.
 router.delete('/documentos/del/:id', DocumentosController.ocultarDocumentos); //Recomendado.

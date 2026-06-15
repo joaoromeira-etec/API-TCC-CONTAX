@@ -154,6 +154,7 @@ async cadastrarDocumentos(request, response) {
             emp_id,
             tpd_id
         } = request.body;
+        const imagem = request.file;
 
         const doc_status = 1;
 
@@ -260,7 +261,8 @@ async cadastrarDocumentos(request, response) {
             parseInt(tpd_id),
             path,
             originalname,
-            doc_status
+            doc_status,
+            imagem.filename
         ];
 
         const [result] = await db.query(sql, values);
