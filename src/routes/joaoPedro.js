@@ -11,7 +11,7 @@ const TipoDocumentosController = require('../controllers/tipoDocumentos');
 const DocumentosController = require('../controllers/documentos');
 const RegimeEmpresaController = require('../controllers/regimeEmpresa');
 const AdminController = require('../controllers/admin');
-//const uploadImage = require('../middleware/uploadHelper');
+//const uploadImage = require('../controllers/uploadHelper');
 //const uploadDocumentos = uploadImage('documentos');
 
 // Rotas para Tipo de Documentos
