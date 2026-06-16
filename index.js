@@ -1,16 +1,18 @@
 require('dotenv').config();
 
-const express = require('express'); 
+const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const routes = require('./src/routes/routes');
 
-const app = express(); 
-app.use(cors()); 
-app.use(express.json()); 
+const app = express();
+app.use(cors());
+app.use(express.json());
 
 app.use(routes);
-app.use('/public', express.static('public'));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const porta = process.env.PORT || 3333;
 

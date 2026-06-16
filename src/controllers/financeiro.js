@@ -1,4 +1,7 @@
 const db = require('../dataBase/connection');
+const fse = require('fs-extra');
+const path = require('path');
+const { extrairDadosFinanceiros } = require('../utils/financeiroExtrator');
 
 /*
 --------------------------------------------------------------------------
@@ -273,6 +276,126 @@ async cadastrarFinanceiro(request, response) {
         return response.status(500).json({
             sucesso: false,
             mensagem: 'Erro ao cadastrar registro financeiro.',
+            dados: error.message
+        });
+    }
+},
+
+async extrairFinanceiroDoDocumento(request, response) {
+    try {
+        const { doc_id } = request.params;
+
+        if (!doc_id || isNaN(doc_id)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'ID do documento inválido.',
+                dados: null
+            });
+        }
+
+        const sqlDocumento = `
+            SELECT
+                d.doc_id,
+                d.doc_caminho_arquivo,
+                d.doc_nome_original,
+                d.tpd_id,
+                t.tpd_descricao
+            FROM DOCUMENTOS d
+            INNER JOIN TIPO_DOCUMENTOS t
+                ON t.tpd_id = d.tpd_id
+            WHERE d.doc_id = ?
+        `;
+
+        const [documentoResult] = await db.query(sqlDocumento, [doc_id]);
+
+        if (documentoResult.length === 0) {
+            return response.status(404).json({
+                sucesso: false,
+                mensagem: 'Documento não encontrado.',
+                dados: null
+            });
+        }
+
+        const documento = documentoResult[0];
+        const caminhoDocumento = path.isAbsolute(documento.doc_caminho_arquivo)
+            ? documento.doc_caminho_arquivo
+            : path.join(process.cwd(), documento.doc_caminho_arquivo);
+
+        if (!fse.existsSync(caminhoDocumento)) {
+            return response.status(404).json({
+                sucesso: false,
+                mensagem: 'Arquivo físico não encontrado.',
+                dados: null
+            });
+        }
+
+        const dadosExtraidos = await extrairDadosFinanceiros(
+            caminhoDocumento,
+            documento.doc_nome_original,
+            documento.tpd_descricao
+        );
+
+        if (!dadosExtraidos.fin_valor_total) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Não foi possível extrair valor financeiro do documento.',
+                dados: dadosExtraidos
+            });
+        }
+
+        const sqlDuplicado = `
+            SELECT fin_id
+            FROM FINANCEIRO
+            WHERE doc_id = ?
+        `;
+
+        const [duplicadoResult] = await db.query(sqlDuplicado, [doc_id]);
+
+        if (duplicadoResult.length > 0) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'Este documento já possui um registro financeiro.',
+                dados: null
+            });
+        }
+
+        const sqlInserir = `
+            INSERT INTO FINANCEIRO
+                (
+                    doc_id,
+                    fin_valor_total,
+                    fin_categoria,
+                    fin_data_emissao,
+                    fin_status
+                )
+            VALUES
+                (?, ?, ?, ?, 1)
+        `;
+
+        const [result] = await db.query(sqlInserir, [
+            parseInt(doc_id),
+            dadosExtraidos.fin_valor_total,
+            dadosExtraidos.fin_categoria,
+            dadosExtraidos.fin_data_emissao || new Date()
+        ]);
+
+        return response.status(201).json({
+            sucesso: true,
+            mensagem: 'Registro financeiro extraído e criado com sucesso.',
+            dados: {
+                fin_id: result.insertId,
+                doc_id: parseInt(doc_id),
+                fin_valor_total: dadosExtraidos.fin_valor_total,
+                fin_categoria: dadosExtraidos.fin_categoria,
+                fin_data_emissao: dadosExtraidos.fin_data_emissao || new Date(),
+                fin_status: 1,
+                texto_extraido: dadosExtraidos.texto_extraido
+            }
+        });
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro ao extrair registro financeiro do documento.',
             dados: error.message
         });
     }

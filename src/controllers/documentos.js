@@ -1,5 +1,7 @@
 const db = require('../dataBase/connection');
-const { gerarURL } = require('../../uploads/gerarURl');
+const { gerarURL } = require('../../uploads/gerarURL');
+const path = require('path');
+const fse = require('fs-extra');
 
 module.exports = {
 async listarDocumentos(request, response) {
@@ -261,8 +263,7 @@ async cadastrarDocumentos(request, response) {
             parseInt(tpd_id),
             path,
             originalname,
-            doc_status,
-            imagem.filename
+            doc_status
         ];
 
         const [result] = await db.query(sql, values);
@@ -483,6 +484,42 @@ async editarDocumentos(request, response) {
         });
     }
  },
+    async downloadDocumento(request, response) {
+        try {
+            const { id } = request.params;
+
+            if (!id || isNaN(id)) {
+                return response.status(400).json({ sucesso: false, mensagem: 'ID inválido.', dados: null });
+            }
+
+            const sql = `
+                SELECT doc_caminho_arquivo, doc_nome_original
+                FROM DOCUMENTOS
+                WHERE doc_id = ?
+            `;
+
+            const [rows] = await db.query(sql, [id]);
+
+            if (rows.length === 0) {
+                return response.status(404).json({ sucesso: false, mensagem: 'Documento não encontrado.', dados: null });
+            }
+
+            const { doc_caminho_arquivo, doc_nome_original } = rows[0];
+
+            const arquivoPath = path.isAbsolute(doc_caminho_arquivo)
+                ? doc_caminho_arquivo
+                : path.join(process.cwd(), doc_caminho_arquivo);
+
+            if (!fse.existsSync(arquivoPath)) {
+                return response.status(404).json({ sucesso: false, mensagem: 'Arquivo físico não encontrado.', dados: null });
+            }
+
+            return response.download(arquivoPath, doc_nome_original);
+
+        } catch (error) {
+            return response.status(500).json({ sucesso: false, mensagem: 'Erro ao baixar documento.', dados: error.message });
+        }
+    },
 
 async apagarDocumentos(request, response) {
     try {
