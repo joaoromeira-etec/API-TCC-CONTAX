@@ -2,6 +2,7 @@ const db = require('../dataBase/connection');
 const { gerarURL } = require('../../uploads/gerarURL');
 const path = require('path');
 const fse = require('fs-extra');
+const fs = require('fs');
 
 module.exports = {
 async listarDocumentos(request, response) {
@@ -518,6 +519,75 @@ async editarDocumentos(request, response) {
 
         } catch (error) {
             return response.status(500).json({ sucesso: false, mensagem: 'Erro ao baixar documento.', dados: error.message });
+        }
+    },
+
+    async previewDocumento(request, response) {
+        try {
+            const { id } = request.params;
+
+            if (!id || isNaN(id)) {
+                return response.status(400).json({ sucesso: false, mensagem: 'ID inválido.', dados: null });
+            }
+
+            const sql = `
+                SELECT doc_caminho_arquivo, doc_nome_original
+                FROM DOCUMENTOS
+                WHERE doc_id = ?
+            `;
+
+            const [rows] = await db.query(sql, [id]);
+
+            if (rows.length === 0) {
+                return response.status(404).json({ sucesso: false, mensagem: 'Documento não encontrado.', dados: null });
+            }
+
+            const { doc_caminho_arquivo, doc_nome_original } = rows[0];
+
+            const arquivoPath = path.isAbsolute(doc_caminho_arquivo)
+                ? doc_caminho_arquivo
+                : path.join(process.cwd(), doc_caminho_arquivo);
+
+            if (!fse.existsSync(arquivoPath)) {
+                return response.status(404).json({ sucesso: false, mensagem: 'Arquivo físico não encontrado.', dados: null });
+            }
+
+            const stat = fs.statSync(arquivoPath);
+            const fileSize = stat.size;
+            const range = request.headers.range;
+
+            if (range) {
+                const parts = range.replace(/bytes=/, '').split('-');
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+                if (start >= fileSize) {
+                    return response.status(416).set('Content-Range', `bytes */${fileSize}`).send('Requested range not satisfiable');
+                }
+
+                const chunksize = (end - start) + 1;
+                const file = fs.createReadStream(arquivoPath, { start, end });
+                const head = {
+                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                    'Accept-Ranges': 'bytes',
+                    'Content-Length': chunksize,
+                    'Content-Type': 'application/pdf'
+                };
+
+                response.writeHead(206, head);
+                file.pipe(response);
+            } else {
+                const head = {
+                    'Content-Length': fileSize,
+                    'Content-Type': 'application/pdf',
+                    'Content-Disposition': `inline; filename="${doc_nome_original}"`
+                };
+                response.writeHead(200, head);
+                fs.createReadStream(arquivoPath).pipe(response);
+            }
+
+        } catch (error) {
+            return response.status(500).json({ sucesso: false, mensagem: 'Erro ao pré-visualizar documento.', dados: error.message });
         }
     },
 
