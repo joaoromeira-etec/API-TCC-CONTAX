@@ -5,7 +5,7 @@ module.exports = {
   async listarPrazos(request, response) {
     try {
 
-      const { page = 1, limit = 5 } = request.query;
+      const { page = 1, limit = 5, emp_id } = request.query;
 
       const pagina = parseInt(page);
       const limite = parseInt(limit);
@@ -14,6 +14,7 @@ module.exports = {
       const [total] = await db.query(`
         SELECT COUNT(*) as total
         FROM prazos
+        WHERE (? IS NULL or emp_id = ?)
       `);
 
       const totalRegistros = total[0].total;
@@ -21,16 +22,21 @@ module.exports = {
 
       const sql = `
         SELECT 
-            praz_id,
-            emp_id,
-            praz_descricao,
-            praz_data_vencimento,
-            praz_status
-        FROM prazos
+          p.praz_id,
+          p.emp_id,
+          e.emp_nome_fantasia,
+          p.praz_descricao,
+          p.praz_data_vencimento,
+          p.praz_status
+        FROM PRAZOS p
+        LEFT JOIN EMPRESAS e
+          ON e.emp_id = p.emp_id
+        WHERE (? IS NULL OR p.emp_id = ?)
+        ORDER BY p.praz_data_vencimento ASC
         LIMIT ?, ?
       `;
 
-      const [prazos] = await db.query(sql, [offset, limite]);
+      const [prazos] = await db.query(sql, [emp_id || null, emp_id || null, offset, limite]);
 
       return response.status(200).json({
         sucesso: true,
