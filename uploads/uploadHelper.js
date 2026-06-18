@@ -17,11 +17,16 @@ const uploadImage = (destinationFolder) => {
         destination: (req, file, cb) => {
             cb(null, fullPath);
         },
-        filename: function (req, file, cb) {
-            const uniqueSuffic = Date.now + '-' + Math.round(Math.random() * 1E9);
-            //Extrai a extensão do arquivo a partir do mimetype
-            const extension = file.mimetype.split('/')[1];
-            cb(null, `${uniqueSuffic}.${extension}`);
+        filename: (req, file, cb) => {
+            const uniqueName =
+                Date.now() +
+                '-' +
+                Math.round(Math.random() * 1E9);
+
+            const extension =
+                path.extname(file.originalname);
+
+            cb(null, uniqueName + extension);
         }
     });
 
