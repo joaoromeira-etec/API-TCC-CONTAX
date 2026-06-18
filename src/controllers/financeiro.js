@@ -27,6 +27,7 @@ module.exports = {
         const {
             id,
             doc_id,
+            emp_id,
             categoria,
             status,
             page = 1,
@@ -76,6 +77,7 @@ module.exports = {
                 ON e.emp_id = d.emp_id
             WHERE 1=1
             AND f.fin_status = ?
+            AND (? IS NULL OR d.emp_id = ?)
             ${id ? 'AND f.fin_id = ?' : 'AND f.fin_id BETWEEN ? AND ?'}
             ${doc_id ? 'AND f.doc_id = ?' : ''}
             ${categoria ? 'AND f.fin_categoria = ?' : ''}
@@ -85,6 +87,7 @@ module.exports = {
 
         const values = [
             statusFiltro,
+            ...(emp_id ? [parseInt(emp_id), parseInt(emp_id)]: [null, null]),
             ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
             ...(doc_id ? [parseInt(doc_id)] : []),
             ...(categoria ? [categoria] : []),
@@ -97,8 +100,11 @@ module.exports = {
         const countQuery = `
             SELECT COUNT(*) AS total
             FROM FINANCEIRO f
+            INNER JOIN DOCUMENTOS d
+                ON d.doc_id = f.doc_id
             WHERE 1=1
             AND f.fin_status = ?
+            AND (? IS NULL OR d.emp_id = ?)
             ${id ? 'AND f.fin_id = ?' : 'AND f.fin_id BETWEEN ? AND ?'}
             ${doc_id ? 'AND f.doc_id = ?' : ''}
             ${categoria ? 'AND f.fin_categoria = ?' : ''}
@@ -106,9 +112,9 @@ module.exports = {
 
         const countValues = [
             statusFiltro,
-
-            ...(id? [parseInt(id)]: [idMinLimite, idMaxLimite]),
-            ...(doc_id? [parseInt(doc_id)]: []),
+            ...(emp_id ? [parseInt(emp_id), parseInt(emp_id)] : [null, null]),
+            ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
+            ...(doc_id ? [parseInt(doc_id)] : []),
             ...(categoria ? [categoria]: [])
         ];
 
@@ -125,6 +131,12 @@ module.exports = {
         return response.status(200).json({
             sucesso: true,
             mensagem: 'Lista de registros financeiros.',
+
+            paginacao: {
+                pagina: parseInt(page),
+                limite: parseInt(limit),
+                total_registros: total
+            },
             nItens: rows.length,
             dados: rows
         });
@@ -138,10 +150,10 @@ module.exports = {
     }
 },
 
-async resumoFinanceiro(request, response) {
+    async resumoFinanceiro(request, response) {
     try {
 
-        const { emp_id } = request.query;
+        const { emp_id, mes, ano } = request.query;
 
         const sql = `
             SELECT
@@ -182,23 +194,45 @@ async resumoFinanceiro(request, response) {
                 ON d.doc_id = f.doc_id
             WHERE f.fin_status = 1
             AND (? IS NULL OR d.emp_id = ?)
+            AND (? IS NULL OR MONTH(f.fin_data_emissao) = ?)
+            AND (? IS NULL OR YEAR(f.fin_data_emissao) = ?)
         `;
 
         const [rows] = await db.query(sql, [
             emp_id || null,
-            emp_id || null
+            emp_id || null,
+            mes || null,
+            mes || null,
+            ano || null,
+            ano || null
         ]);
 
-        const faturamento = Number(rows[0].faturamento);
-        const impostos = Number(rows[0].impostos);
-        const despesas = Number(rows[0].despesas);
-        const custos = Number(rows[0].custos);
+        const faturamento = Number(rows[0]?.faturamento || 0);
+        const impostos = Number(rows[0]?.impostos || 0);
+        const despesas = Number(rows[0]?.despesas || 0);
+        const custos = Number(rows[0]?.custos || 0);
 
         const lucro =
             faturamento -
             impostos -
             despesas -
             custos;
+
+        const limiteMensal = 20000;
+            
+        const percentualLimite =
+            limiteMensal > 0 ? (faturamento / limiteMensal ) * 100
+            : 0;
+
+        let statusLimite = 'Saudável';
+
+        if (percentualLimite >= 80) {
+            statusLimite = 'Risco';
+        } 
+        else if (percentualLimite >= 50) {
+            statusLimite = 'Atenção';
+        }
+
 
         return response.status(200).json({
             sucesso: true,
@@ -208,7 +242,10 @@ async resumoFinanceiro(request, response) {
                 impostos,
                 despesas,
                 custos,
-                lucro
+                lucro,
+
+                percentual_limite: percentualLimite,
+                status_limite: statusLimite
             }
         });
 
@@ -221,7 +258,7 @@ async resumoFinanceiro(request, response) {
     }
 },
 
-async cadastrarFinanceiro(request, response) {
+    async cadastrarFinanceiro(request, response) {
     try {
         const {
             doc_id,
@@ -267,7 +304,7 @@ async cadastrarFinanceiro(request, response) {
         if (!categoriasPermitidas.includes(categoria)) {
             return response.status(400).json({
                 sucesso: false,
-                mensagem: 'Categoria inválida. Use Faturamento, Imposto ou Despesa.',
+                mensagem: `Categoria inválida. Use: ${categoriasPermitidas.join(', ')}.`,
                 dados: null
             });
         }
@@ -364,7 +401,7 @@ async cadastrarFinanceiro(request, response) {
     }
 },
 
-async extrairFinanceiroDoDocumento(request, response) {
+    async extrairFinanceiroDoDocumento(request, response) {
     try {
         const { doc_id } = request.params;
 
@@ -404,6 +441,13 @@ async extrairFinanceiroDoDocumento(request, response) {
             ? documento.doc_caminho_arquivo
             : path.join(process.cwd(), documento.doc_caminho_arquivo);
 
+            console.log('CAMINHO NO BANCO:', documento.doc_caminho_arquivo);
+            console.log('CAMINHO RESOLVIDO:', caminhoDocumento);
+            console.log('process.cwd():', process.cwd());
+            console.log('doc_caminho_arquivo:', documento.doc_caminho_arquivo);
+            console.log('caminhoDocumento:', caminhoDocumento);
+            console.log('arquivoExiste:', fse.existsSync(caminhoDocumento));
+            
         if (!fse.existsSync(caminhoDocumento)) {
             return response.status(404).json({
                 sucesso: false,
