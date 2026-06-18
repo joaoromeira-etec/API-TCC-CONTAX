@@ -69,22 +69,22 @@ INSERT INTO DOCUMENTOS
 
 -- Inserts pra FINANCEIRO
 INSERT INTO FINANCEIRO
-(fin_id, doc_id, fin_valor_total, fin_categoria, fin_data_emissao) VALUES
-(1, 1, 5000.00, 'Faturamento', '2026-06-01'),
-(2, 2, 1200.00, 'Imposto', '2026-06-05'),
-(3, 3, 800.00, 'Despesa', '2026-06-10'),
-(4, 4, 3500.00, 'Faturamento', '2026-06-12'),
-(5, 5, 400.00, 'Despesa', '2026-06-15'),
-(6, 6, 600.00, 'Imposto', '2026-06-18');
+(fin_id, doc_id, fin_valor_total, fin_categoria, fin_data_emissao, fin_status) VALUES
+(1, 1, 5000.00, 'Faturamento', '2026-06-01', 1),
+(2, 2, 1200.00, 'Imposto', '2026-06-05', 1),
+(3, 3, 800.00, 'Despesa', '2026-06-10', 1),
+(4, 4, 3500.00, 'Faturamento', '2026-06-12', 1),
+(5, 5, 400.00, 'Despesa', '2026-06-15', 1),
+(6, 6, 600.00, 'Imposto', '2026-06-18', 1);
 
 -- Inserts para PRAZOS
-INSERT INTO PRAZOS (praz_id, emp_id, praz_descricao, praz_data_vencimento, praz_status) VALUES
-(1, 1, 'Entrega IRPJ', '2023-03-31', 0),
-(2, 2, 'Pagamento DAS', '2023-04-20', 1),
-(3, 3, 'Entrega DCTF', '2023-05-15', 2),
-(4, 4, 'Reunião Fiscal', '2023-06-10', 0),
-(5, 5, 'Envio NF-e', '2023-07-05', 1),
-(6, 6, 'Revisão Contrato', '2023-08-12', 2);
+INSERT INTO PRAZOS (praz_id, emp_id, praz_descricao, praz_status, praz_data_vencimento) VALUES
+(1, 1, 'Entrega IRPJ', 0, '2023-03-31'),
+(2, 2, 'Pagamento DAS', 1, '2023-04-20'),
+(3, 3, 'Entrega DCTF', 2, '2023-05-15'),
+(4, 4, 'Reunião Fiscal', 0, '2023-06-10'),
+(5, 5, 'Envio NF-e', 1, '2023-07-05'),
+(6, 6, 'Revisão Contrato', 2, '2023-08-12');
 
 -- Inserts para AUDITORIA (removido aud_status e usando DATETIME)
 INSERT INTO AUDITORIA (aud_id, usu_id, aud_acao, aud_tabela_afetada, aud_registro_afetado, aud_data_acao) VALUES

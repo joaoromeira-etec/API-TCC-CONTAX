@@ -20,14 +20,23 @@ module.exports = {
 
       const sql = `
         SELECT
-          aud_id,
-          usu_id,
-          aud_acao,
-          aud_tabela_afetada,
-          aud_registro_afetado,
-          aud_data_acao
-        FROM AUDITORIA
-        ORDER BY aud_id DESC
+          a.aud_id,
+          a.usu_id,
+          u.usu_nome,
+          a.aud_acao,
+          CASE
+            WHEN a.aud_acao = 0 THEN 'Inserção'
+            WHEN a.aud_acao = 1 THEN 'Edição'
+            WHEN a.aud_acao = 2 THEN 'Exclusão'
+            ELSE 'Desconhecido'
+          END AS aud_acao_descricao,
+          a.aud_tabela_afetada,
+          a.aud_registro_afetado,
+          a.aud_data_acao
+        FROM AUDITORIA a
+        LEFT JOIN USUARIOS u
+          ON u.usu_id = a.usu_id
+        ORDER BY a.aud_id DESC
         LIMIT ?, ?
       `;
 

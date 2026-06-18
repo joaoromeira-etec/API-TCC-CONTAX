@@ -16,6 +16,7 @@ router.delete('/regime/del/:id', regimeController.ocultarRegime); //Recomendado.
 
 // Rotas para Prazos
 router.get('/prazos', prazosController.listarPrazos);
+router.get('/prazos/resumo', prazosController.resumoPrazos);
 router.post('/prazos', prazosController.cadastrarPrazos);
 router.patch('/prazos/:id', prazosController.editarPrazos);
 router.delete('/prazos/:id', prazosController.apagarPrazos); //Não-Recomendado.

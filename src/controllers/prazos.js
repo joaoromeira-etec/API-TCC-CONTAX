@@ -13,9 +13,10 @@ module.exports = {
 
       const [total] = await db.query(`
         SELECT COUNT(*) as total
-        FROM prazos
-        WHERE (? IS NULL or emp_id = ?)
-      `);
+        FROM PRAZOS
+        WHERE (? IS NULL OR emp_id = ?)
+        AND praz_status <> 2
+      `, [emp_id || null, emp_id || null]);
 
       const totalRegistros = total[0].total;
       const totalPaginas = Math.ceil(totalRegistros / limite);
@@ -27,14 +28,23 @@ module.exports = {
           e.emp_nome_fantasia,
           p.praz_descricao,
           p.praz_data_vencimento,
-          p.praz_status
-        FROM PRAZOS p
-        LEFT JOIN EMPRESAS e
-          ON e.emp_id = p.emp_id
-        WHERE (? IS NULL OR p.emp_id = ?)
-        ORDER BY p.praz_data_vencimento ASC
-        LIMIT ?, ?
-      `;
+          p.praz_status,
+          DATEDIFF(p.praz_data_vencimento, CURDATE()) AS dias_restantes,
+          CASE
+            WHEN p.praz_status = 1 THEN 'Concluído'
+            WHEN p.praz_status = 0 AND p.praz_data_vencimento < CURDATE() THEN 'Vencido'
+            WHEN p.praz_status = 0 AND p.praz_data_vencimento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 'Vence esta semana'
+            WHEN p.praz_status = 0 THEN 'Pendente'
+            ELSE 'Oculto'
+          END AS status_descricao
+      FROM PRAZOS p
+      LEFT JOIN EMPRESAS e
+        ON e.emp_id = p.emp_id
+      WHERE (? IS NULL OR p.emp_id = ?)
+      AND p.praz_status <> 2
+      ORDER BY p.praz_data_vencimento ASC
+      LIMIT ?, ?
+    `;
 
       const [prazos] = await db.query(sql, [emp_id || null, emp_id || null, offset, limite]);
 
@@ -61,6 +71,54 @@ module.exports = {
       });
     }
   },
+
+  async resumoPrazos(request, response) {
+  try {
+    const { emp_id } = request.query;
+
+    const sql = `
+      SELECT
+        COUNT(*) AS total_prazos,
+        SUM(CASE
+          WHEN praz_status = 0
+          AND praz_data_vencimento >= CURDATE()
+          THEN 1 ELSE 0 END
+        ) AS pendencias,
+        SUM(CASE
+          WHEN praz_status = 0
+          AND praz_data_vencimento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          THEN 1 ELSE 0 END
+        ) AS vencendo_semana,
+        SUM(CASE
+          WHEN praz_status = 0
+          AND praz_data_vencimento < CURDATE()
+          THEN 1 ELSE 0 END
+        ) AS vencidos,
+        SUM(CASE
+          WHEN praz_status = 1
+          THEN 1 ELSE 0 END
+        ) AS concluidos
+      FROM PRAZOS
+      WHERE praz_status <> 2
+      AND (? IS NULL OR emp_id = ?)
+    `;
+
+    const [rows] = await db.query(sql, [emp_id || null, emp_id || null]);
+
+    return response.status(200).json({
+      sucesso: true,
+      mensagem: "Resumo de prazos obtido com sucesso",
+      dados: rows[0]
+    });
+
+  } catch (error) {
+    return response.status(500).json({
+      sucesso: false,
+      mensagem: `Erro ao obter resumo de prazos: ${error.message}`,
+      dados: null
+    });
+  }
+},
 
 
   async cadastrarPrazos(request, response) {

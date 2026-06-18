@@ -138,6 +138,89 @@ module.exports = {
     }
 },
 
+async resumoFinanceiro(request, response) {
+    try {
+
+        const { emp_id } = request.query;
+
+        const sql = `
+            SELECT
+                COALESCE(SUM(
+                    CASE
+                        WHEN f.fin_categoria = 'Faturamento'
+                        THEN f.fin_valor_total
+                        ELSE 0
+                    END
+                ),0) AS faturamento,
+
+                COALESCE(SUM(
+                    CASE
+                        WHEN f.fin_categoria = 'Imposto'
+                        THEN f.fin_valor_total
+                        ELSE 0
+                    END
+                ),0) AS impostos,
+
+                COALESCE(SUM(
+                    CASE
+                        WHEN f.fin_categoria = 'Despesa'
+                        THEN f.fin_valor_total
+                        ELSE 0
+                    END
+                ),0) AS despesas,
+
+                COALESCE(SUM(
+                    CASE
+                        WHEN f.fin_categoria = 'Custo'
+                        THEN f.fin_valor_total
+                        ELSE 0
+                    END
+                ),0) AS custos
+
+            FROM FINANCEIRO f
+            INNER JOIN DOCUMENTOS d
+                ON d.doc_id = f.doc_id
+            WHERE f.fin_status = 1
+            AND (? IS NULL OR d.emp_id = ?)
+        `;
+
+        const [rows] = await db.query(sql, [
+            emp_id || null,
+            emp_id || null
+        ]);
+
+        const faturamento = Number(rows[0].faturamento);
+        const impostos = Number(rows[0].impostos);
+        const despesas = Number(rows[0].despesas);
+        const custos = Number(rows[0].custos);
+
+        const lucro =
+            faturamento -
+            impostos -
+            despesas -
+            custos;
+
+        return response.status(200).json({
+            sucesso: true,
+            mensagem: 'Resumo financeiro obtido com sucesso.',
+            dados: {
+                faturamento,
+                impostos,
+                despesas,
+                custos,
+                lucro
+            }
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro ao obter resumo financeiro.',
+            dados: error.message
+        });
+    }
+},
+
 async cadastrarFinanceiro(request, response) {
     try {
         const {
@@ -179,7 +262,7 @@ async cadastrarFinanceiro(request, response) {
         }
 
         // 4. Validação de categoria
-        const categoriasPermitidas = ['Faturamento', 'Imposto', 'Despesa'];
+        const categoriasPermitidas = ['Faturamento', 'Imposto', 'Despesa', 'Custo'];
 
         if (!categoriasPermitidas.includes(categoria)) {
             return response.status(400).json({
@@ -452,7 +535,7 @@ async editarFinanceiro(request, response) {
         }
 
         // 5. Validação de categoria
-        const categoriasPermitidas = ['Faturamento', 'Imposto', 'Despesa'];
+        const categoriasPermitidas = ['Faturamento', 'Imposto', 'Despesa', 'Custo'];
 
         if (!categoriasPermitidas.includes(categoria)) {
             return response.status(400).json({

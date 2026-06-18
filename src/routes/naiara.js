@@ -25,6 +25,7 @@ router.delete('/empresas/:id', empresasController.apagarEmpresas);
 router.delete('/empresas/del/:id', empresasController.ocultarEmpresas);
 
 router.get('/financeiro', financeiroController.listarFinanceiro);
+router.get('/financeiro/resumo', financeiroController.resumoFinanceiro);
 router.post('/financeiro', financeiroController.cadastrarFinanceiro);
 router.post('/financeiro/extrair/:doc_id', financeiroController.extrairFinanceiroDoDocumento);
 router.patch('/financeiro/:id', financeiroController.editarFinanceiro);
