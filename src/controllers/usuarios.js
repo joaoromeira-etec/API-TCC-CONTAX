@@ -144,7 +144,8 @@ module.exports = {
         try {
             const {email, senha} = request.query;
 
-            const sql = `
+            // Busca o usuário
+            const sqlUsuario = `
                 SELECT 
                     usu_id, usu_nome, usu_status 
                 FROM 
@@ -155,28 +156,73 @@ module.exports = {
         
             const values = [email, senha];
 
-            const [rows] = await db.query(sql, values);
-            const nItens = rows.length;
+            const [usuarioRows] = await db.query(sqlUsuario, values);
 
-        if (nItens < 1) {
-            return response.status(403).json ({
-                sucesso: false,
-                mensagem: 'Login e/ou senha inválida',
-                dados: null,
+            if (usuarioRows.length === 0) {
+                return response.status(403).json ({
+                    sucesso: false,
+                    mensagem: 'Login e/ou senha inválida',
+                    dados: null,
+                });
+            }
+
+            const usuarioId = usuarioRows[0].usu_id;
+
+            // Busca as empresas vinculadas ao usuário
+            const sqlEmpresas = `
+                SELECT
+                    e.emp_id,
+                    e.emp_nome_fantasia,
+                    e.emp_tipo,
+                    e.emp_status,
+                    ue.usu_emp_nivel_acesso,
+                    ue.usu_emp_data_vinculo
+                FROM USUARIO_EMPRESAS ue
+                INNER JOIN EMPRESAS e ON e.emp_id = ue.emp_id
+                WHERE ue.usu_id = ? AND ue.usu_emp_status = 1 AND e.emp_status = 1
+                ORDER BY e.emp_nome_fantasia
+            `;
+
+            const [empresasRows] = await db.query(sqlEmpresas, [usuarioId]);
+
+            if (empresasRows.length === 0) {
+                return response.status(403).json ({
+                    sucesso: false,
+                    mensagem: 'Usuário não possui empresas vinculadas',
+                    dados: null,
+                });
+            }
+
+            // Mapeia as empresas com informações completas
+            const empresas = empresasRows.map(emp => ({
+                emp_id: emp.emp_id,
+                nome: emp.emp_nome_fantasia,
+                tipo: emp.emp_tipo === 0 ? 'ME' : 'MEI',
+                tipoNumerico: emp.emp_tipo,
+                nivel_acesso: emp.usu_emp_nivel_acesso,
+                nivel_descricao: emp.usu_emp_nivel_acesso === 0 
+                    ? 'Visualizador' 
+                    : emp.usu_emp_nivel_acesso === 1 
+                    ? 'Gerente' 
+                    : 'Administrador',
+                data_vinculo: emp.usu_emp_data_vinculo
+            }));
+
+            const dados = {
+                usuario: {
+                    id: usuarioRows[0].usu_id,
+                    nome: usuarioRows[0].usu_nome,
+                    status: usuarioRows[0].usu_status
+                },
+                empresas: empresas,
+                empresa_padrao: empresas[0] // Define a primeira empresa como padrão
+            };
+
+            return response.status(200).json ({
+                sucesso: true,
+                mensagem: 'Login efetuado com sucesso',
+                dados
             });
-        }
-
-        const dados = rows.map(usuarios => ({
-            id: usuarios.usu_id,
-            nome: usuarios.usu_nome,
-            status: usuarios.usu_status
-        }))
-
-        return response.status(200).json ({
-            sucesso: true,
-            mensagem: 'Login efetuado com sucesso',
-            dados
-        });
         } catch (error) {
             return response.status(500).json ({
                 sucesso: false,

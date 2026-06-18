@@ -7,11 +7,13 @@ const fs = require('fs');
 module.exports = {
 async listarDocumentos(request, response) {
     try {
+        const empresaId = request.empresa.id;
+        const nivelAcesso = request.nivelAcesso;
+
         const {
             id,
             nome,
             tpd_id,
-            emp_id,
             usu_id,
             categoria,
             status,
@@ -70,11 +72,11 @@ async listarDocumentos(request, response) {
             LEFT JOIN FINANCEIRO f
                 ON f.doc_id = d.doc_id
             WHERE 1=1
+            AND d.emp_id = ?
             AND d.doc_status = ?
             AND d.doc_nome_original LIKE ?
             ${id ? 'AND d.doc_id = ?' : 'AND d.doc_id BETWEEN ? AND ?'}
             ${tpd_id ? 'AND d.tpd_id = ?' : ''}
-            ${emp_id ? 'AND d.emp_id = ?' : ''}
             ${usu_id ? 'AND d.usu_id = ?' : ''}
             ${categoria ? 'AND f.fin_categoria = ?' : ''}
             ORDER BY d.doc_id DESC
@@ -82,11 +84,11 @@ async listarDocumentos(request, response) {
         `;
 
         const values = [
+            empresaId,
             statusFiltro,
             nomeFiltro,
             ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
             ...(tpd_id ? [parseInt(tpd_id)] : []),
-            ...(emp_id ? [parseInt(emp_id)] : []),
             ...(usu_id ? [parseInt(usu_id)] : []),
             ...(categoria ? [categoria] : []),
             offset,
@@ -111,21 +113,21 @@ async listarDocumentos(request, response) {
             LEFT JOIN FINANCEIRO f
                 ON f.doc_id = d.doc_id
             WHERE 1=1
+            AND d.emp_id = ?
             AND d.doc_status = ?
             AND d.doc_nome_original LIKE ?
             ${id ? 'AND d.doc_id = ?' : 'AND d.doc_id BETWEEN ? AND ?'}
             ${tpd_id ? 'AND d.tpd_id = ?' : ''}
-            ${emp_id ? 'AND d.emp_id = ?' : ''}
             ${usu_id ? 'AND d.usu_id = ?' : ''}
             ${categoria ? 'AND f.fin_categoria = ?' : ''}
         `;
 
         const countValues = [
+            empresaId,
             statusFiltro,
             nomeFiltro,
             ...(id ? [parseInt(id)] : [idMinLimite, idMaxLimite]),
             ...(tpd_id ? [parseInt(tpd_id)] : []),
-            ...(emp_id ? [parseInt(emp_id)] : []),
             ...(usu_id ? [parseInt(usu_id)] : []),
             ...(categoria ? [categoria] : [])
         ];
@@ -152,11 +154,20 @@ async listarDocumentos(request, response) {
 
 async cadastrarDocumentos(request, response) {
     try {
-        const {
-            usu_id,
-            emp_id,
-            tpd_id
-        } = request.body;
+        // Validação: Apenas ADM (nível 2) pode fazer upload
+        const nivelAcesso = request.nivelAcesso;
+        const usuarioId = request.usuario.id;
+        const empresaId = request.empresa.id;
+
+        if (nivelAcesso !== 2) {
+            return response.status(403).json({
+                sucesso: false,
+                mensagem: 'Apenas administradores podem fazer upload de documentos',
+                dados: null
+            });
+        }
+
+        const { tpd_id } = request.body;
         const imagem = request.file;
 
         const doc_status = 1;
@@ -172,56 +183,19 @@ async cadastrarDocumentos(request, response) {
 
         const { path, originalname } = request.file;
 
-        // 2. Validação de campos obrigatórios
-        if (!usu_id || !emp_id || !tpd_id) {
+        // 2. Validação de tipo de documento
+        if (!tpd_id) {
             return response.status(400).json({
                 sucesso: false,
-                mensagem: 'Usuário, empresa e tipo do documento são obrigatórios.',
+                mensagem: 'Tipo do documento é obrigatório.',
                 dados: null
             });
         }
 
-        // 3. Validação de campos numéricos
-        if (isNaN(usu_id) || isNaN(emp_id) || isNaN(tpd_id)) {
+        if (isNaN(tpd_id)) {
             return response.status(400).json({
                 sucesso: false,
-                mensagem: 'Usuário, empresa e tipo do documento devem ser numéricos.',
-                dados: null
-            });
-        }
-
-        const sqlUsuario = `
-            SELECT usu_id
-            FROM USUARIOS
-            WHERE usu_id = ?
-            AND usu_status = 1
-        `;
-
-        const [usuarioResult] = await db.query(sqlUsuario, [usu_id]);
-
-        // 4. Validação de existência do usuário
-        if (usuarioResult.length === 0) {
-            return response.status(404).json({
-                sucesso: false,
-                mensagem: 'Usuário não encontrado ou inativo.',
-                dados: null
-            });
-        }
-
-        const sqlEmpresa = `
-            SELECT emp_id
-            FROM EMPRESAS
-            WHERE emp_id = ?
-            AND emp_status = 1
-        `;
-
-        const [empresaResult] = await db.query(sqlEmpresa, [emp_id]);
-
-        // 5. Validação de existência da empresa
-        if (empresaResult.length === 0) {
-            return response.status(404).json({
-                sucesso: false,
-                mensagem: 'Empresa não encontrada ou inativa.',
+                mensagem: 'Tipo do documento deve ser numérico.',
                 dados: null
             });
         }
@@ -235,7 +209,7 @@ async cadastrarDocumentos(request, response) {
 
         const [tipoResult] = await db.query(sqlTipo, [tpd_id]);
 
-        // 6. Validação de existência do tipo
+        // 3. Validação de existência do tipo
         if (tipoResult.length === 0) {
             return response.status(404).json({
                 sucesso: false,
@@ -259,8 +233,8 @@ async cadastrarDocumentos(request, response) {
         `;
 
         const values = [
-            parseInt(usu_id),
-            parseInt(emp_id),
+            usuarioId,
+            empresaId,
             parseInt(tpd_id),
             path,
             originalname,
@@ -271,8 +245,8 @@ async cadastrarDocumentos(request, response) {
 
         const dados = {
             doc_id: result.insertId,
-            usu_id: parseInt(usu_id),
-            emp_id: parseInt(emp_id),
+            usu_id: usuarioId,
+            emp_id: empresaId,
             tpd_id: parseInt(tpd_id),
             doc_caminho_arquivo: path,
             doc_nome_original: originalname,

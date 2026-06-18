@@ -1,0 +1,300 @@
+{
+  "info": {
+    "name": "API CONTAX - Controle de Acesso",
+    "description": "Coleção de testes para o sistema de autenticação e autorização",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/usuarios/login?email={{usuario_email}}&senha={{usuario_senha}}",
+              "host": ["{{base_url}}"],
+              "path": ["usuarios", "login"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{usuario_email}}"
+                },
+                {
+                  "key": "senha",
+                  "value": "{{usuario_senha}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Obter Abas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/abas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "abas"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Resumo Dashboard",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/resumo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "resumo"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Impostos/DAS",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/impostos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "impostos"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Faturamento/Notas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/faturamento",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "faturamento"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Caixa (ME)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/caixa",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "caixa"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Prazos/Controle Mensal",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/prazos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "prazos"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documentos",
+      "item": [
+        {
+          "name": "Listar Documentos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/documentos/autenticados",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documentos", "autenticados"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Upload Documento (ADM)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/documentos/autenticados",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documentos", "autenticados"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tpd_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "arquivo",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Testes de Permissão",
+      "item": [
+        {
+          "name": "Sem Autenticação",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/resumo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "resumo"]
+            }
+          }
+        },
+        {
+          "name": "MEI Acessando Caixa (bloqueado)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/dashboard/caixa",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dashboard", "caixa"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id}}, \"empresaId\": {{empresa_id_mei}}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Visualizador Fazendo Upload (bloqueado)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/documentos/autenticados",
+              "host": ["{{base_url}}"],
+              "path": ["api", "documentos", "autenticados"]
+            },
+            "headers": [
+              {
+                "key": "Authorization",
+                "value": "{\"usuarioId\": {{usuario_id_visualizador}}, \"empresaId\": {{empresa_id}}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tpd_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "arquivo",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3333",
+      "type": "string"
+    },
+    {
+      "key": "usuario_email",
+      "value": "usuario@email.com",
+      "type": "string"
+    },
+    {
+      "key": "usuario_senha",
+      "value": "senha123",
+      "type": "string"
+    },
+    {
+      "key": "usuario_id",
+      "value": "1",
+      "type": "number"
+    },
+    {
+      "key": "empresa_id",
+      "value": "5",
+      "type": "number"
+    },
+    {
+      "key": "empresa_id_mei",
+      "value": "6",
+      "type": "number",
+      "description": "ID de uma empresa MEI"
+    },
+    {
+      "key": "usuario_id_visualizador",
+      "value": "2",
+      "type": "number",
+      "description": "ID de um usuário visualizador"
+    }
+  ]
+}

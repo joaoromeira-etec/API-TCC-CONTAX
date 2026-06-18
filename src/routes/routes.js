@@ -5,10 +5,11 @@ const router = express.Router();
 const joaoPedro = require('./joaoPedro');
 const naiara = require('./naiara');
 const rian = require('./rian');
-
+const protegidas = require('./protegidas');
 
 router.use('/', joaoPedro);
 router.use('/', naiara);
 router.use('/', rian);
+router.use('/api', protegidas);
 
 module.exports = router;
