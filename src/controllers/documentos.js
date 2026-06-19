@@ -7,8 +7,21 @@ const fs = require('fs');
 module.exports = {
 async listarDocumentos(request, response) {
     try {
-        const empresaId = request.empresa.id;
-        const nivelAcesso = request.nivelAcesso;
+        console.log(request.empresa);
+        console.log(request.nivelAcesso);
+        console.log(request.user);
+
+        const { emp_id } = request.query;
+
+        if (!emp_id || isNaN(emp_id)) {
+            return response.status(400).json({
+                sucesso: false,
+                mensagem: 'emp_id é obrigatório para listar documentos.',
+                dados: null
+        });
+    }
+
+        const empresaId = parseInt(emp_id);
 
         const {
             id,
@@ -156,7 +169,7 @@ async cadastrarDocumentos(request, response) {
     try {
         // Validação: Apenas ADM (nível 2) pode fazer upload
         const nivelAcesso = request.nivelAcesso;
-        const usuarioId = request.usuario.id;
+        const usuarioId = request.user?.id || request.usuario?.id || null;
         const empresaId = request.empresa.id;
 
         if (nivelAcesso !== 2) {
