@@ -45,20 +45,38 @@ const autenticar = async (request, response, next) => {
             });
         }
 
-        // Valida se a empresa existe e está ativa
+        // Valida se a empresa existe e analisa o seu status contábil
         const [empresas] = await db.query(
-            'SELECT emp_id, emp_tipo, emp_nome_fantasia FROM EMPRESAS WHERE emp_id = ? AND emp_status = 1',
+            'SELECT emp_id, emp_tipo, emp_nome_fantasia, CAST(emp_status AS UNSIGNED) AS emp_status FROM EMPRESAS WHERE emp_id = ?',
             [empresaId]
         );
 
         if (empresas.length === 0) {
             return response.status(401).json({
                 sucesso: false,
-                mensagem: 'Empresa não encontrada ou inativa',
+                mensagem: 'Empresa não encontrada no sistema',
                 dados: null
             });
         }
 
+        const statusEmpresa = empresas[0].emp_status;
+
+        if (statusEmpresa === 0) {
+            return response.status(403).json({
+                sucesso: false,
+                mensagem: 'Acesso negado: Esta empresa encontra-se INATIVA.',
+                dados: null
+            });
+        }
+
+        if (statusEmpresa === 2) {
+            return response.status(403).json({
+                sucesso: false,
+                mensagem: 'Acesso bloqueado: Esta empresa está classificada como INAPTA. Regularize as omissões fiscais.',
+                dados: null
+            });
+        }
+        
         // Valida se o usuário tem vínculo ativo com a empresa
         const [vinculos] = await db.query(
             `SELECT 

@@ -7,16 +7,17 @@ INSERT INTO USUARIOS (usu_id, usu_nome, usu_email, usu_cpf, usu_senha_hash, usu_
 (5, 'Eduarda Melo', 'eduarda@email.com', '56789012345', 'hash5', '11999990005', 1, 0),
 (6, 'Felipe Costa', 'felipe@email.com', '67890123456', 'hash6', '11999990006', 0, 1);
 
--- Inserts para EMPRESAS (incluído emp_senha_hash e emp_status)
+-- Inserts para EMPRESAS (regras de MEI aplicadas e inclusão de status 2 - Inapta)
 INSERT INTO EMPRESAS 
 (emp_id, emp_nome_fantasia, emp_razao_social, emp_cnpj, emp_endereco, emp_municipio, emp_telefone, emp_email, emp_senha_hash, emp_tipo, emp_status) 
 VALUES
-(1, 'Tech Solutions', 'Tech Solutions LTDA', '12345678000101', 'Rua A, 100', 'São Paulo', '(11) 3333-1001', 'contato@techsolutions.com', '$2b$10$hashempresa1', 1, 1),
+(1, 'Tech Solutions', 'Tech Solutions LTDA', '12345678000101', 'Rua A, 100', 'São Paulo', '(11) 3333-1001', 'contato@techsolutions.com', '$2b$10$hashempresa1', 0, 1), -- Mudado para ME(0) pois é LTDA
 (2, 'Comercial Dias', 'Comercial Dias ME', '23456789000102', 'Rua B, 200', 'Campinas', '(11) 3333-2002', 'vendas@comercialdias.com', '$2b$10$hashempresa2', 0, 1),
-(3, 'Melo Serviços', 'Melo Serviços EIRELI', '34567890000103', 'Rua C, 300', 'Santos', '(11) 3333-3003', 'suporte@meloservicos.com', '$2b$10$hashempresa3', 1, 1),
-(4, 'Lima Store', 'Lima Store MEI', '45678901000104', 'Rua D, 400', 'Sorocaba', '(11) 3333-4004', 'contato@limastore.com', '$2b$10$hashempresa4', 1, 1),
-(5, 'Costa Market', 'Costa Market LTDA', '56789012000105', 'Rua E, 500', 'Ribeirão Preto', '(11) 3333-5005', 'atendimento@costamarket.com', '$2b$10$hashempresa5', 1, 1),
-(6, 'Silva Digital', 'Silva Digital ME', '67890123000106', 'Rua F, 600', 'São Bernardo do Campo', '(11) 3333-6006', 'info@silvadigital.com', '$2b$10$hashempresa6', 0, 0);
+(3, 'Melo Serviços', 'ROBERTO MELO 34567890003', '34567890000103', 'Rua C, 300', 'Santos', '(11) 3333-3003', 'suporte@meloservicos.com', '$2b$10$hashempresa3', 1, 1), -- Ajustado padrão Razão Social MEI
+(4, 'Lima Store', 'CARLOS LIMA 45678901004', '45678901000104', 'Rua D, 400', 'Sorocaba', '(11) 3333-4004', 'contato@limastore.com', '$2b$10$hashempresa4', 1, 1), -- Ajustado padrão Razão Social MEI
+(5, 'Costa Market', 'Costa Market LTDA', '56789012000105', 'Rua E, 500', 'Ribeirão Preto', '(11) 3333-5005', 'atendimento@costamarket.com', '$2b$10$hashempresa5', 0, 1), -- Mudado para ME(0) pois é LTDA
+(6, 'Silva Digital', 'Silva Digital ME', '67890123000106', 'Rua F, 600', 'São Bernardo do Campo', '(11) 3333-6006', 'info@silvadigital.com', '$2b$10$hashempresa6', 0, 0), -- Inativa
+(7, 'Souza Conexões', 'ANA SOUZA 78901234007', '78901234000107', 'Rua G, 700', 'Ourinhos', '(14) 3322-7007', 'ana@souzaconexoes.com', '$2b$10$hashempresa7', 1, 2); -- Empresa MEI criada como INAPTA (status 2) para testes!
 
 -- Inserts para USUARIO_EMPRESAS
 INSERT INTO USUARIO_EMPRESAS 

@@ -20,7 +20,7 @@ CREATE TABLE EMPRESAS (
     emp_email VARCHAR(100) NOT NULL,
     emp_senha_hash VARCHAR(255) NOT NULL,
     emp_tipo BIT NOT NULL, -- 0-ME; 1-MEI
-    emp_status BIT NOT NULL -- 0-Inativo; 1-Ativa
+    emp_status TINYINT NOT NULL -- 0-Inativo; 1-Ativa; 2-Inapta (Alterado de BIT para TINYINT)
 );
 
 CREATE TABLE USUARIO_EMPRESAS (
