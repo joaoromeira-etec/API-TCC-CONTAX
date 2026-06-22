@@ -1,16 +1,27 @@
+ /**
+ * @fileoverview Middlewares de Autenticação e Autorização
+ * Gerencia validação de usuários, empresas e permissões de acesso
+ */
+
 const db = require('../dataBase/connection');
 
 /**
- * Middleware de Autenticação - Valida se o usuário está autenticado
- * Espera receber: { usuarioId, empresaId } no header 'Authorization' como JSON
- * 
- * Exemplo de uso no frontend:
+ * Middleware de Autenticação
+ * Valida se o usuário está autenticado e associado à empresa
+ *
+ * Formato esperado do header Authorization:
  * Authorization: '{"usuarioId": 1, "empresaId": 5}'
+ *
+ * @param {Object} request - Express request object
+ * @param {string} request.headers.authorization - JSON com usuarioId e empresaId
+ * @param {Object} response - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {void}
  */
 const autenticar = async (request, response, next) => {
     try {
         const authHeader = request.headers.authorization;
-        
+
         if (!authHeader) {
             return response.status(401).json({
                 sucesso: false,
@@ -31,7 +42,7 @@ const autenticar = async (request, response, next) => {
             });
         }
 
-        // Valida se o usuário existe e está ativo
+        // Valida existência e status do usuário
         const [usuarios] = await db.query(
             'SELECT usu_id, usu_nome FROM USUARIOS WHERE usu_id = ? AND usu_status = 1',
             [usuarioId]
@@ -45,7 +56,7 @@ const autenticar = async (request, response, next) => {
             });
         }
 
-        // Valida se a empresa existe e analisa o seu status contábil
+        // Valida existência e status contábil da empresa
         const [empresas] = await db.query(
             'SELECT emp_id, emp_tipo, emp_nome_fantasia, CAST(emp_status AS UNSIGNED) AS emp_status FROM EMPRESAS WHERE emp_id = ?',
             [empresaId]
@@ -61,10 +72,11 @@ const autenticar = async (request, response, next) => {
 
         const statusEmpresa = empresas[0].emp_status;
 
+        // Status 0 = Inativa, 2 = Inapta (bloqueada)
         if (statusEmpresa === 0) {
             return response.status(403).json({
                 sucesso: false,
-                mensagem: 'Acesso negado: Esta empresa encontra-se INATIVA.',
+                mensagem: 'Acesso negado: Esta empresa encontra-se INATIVA',
                 dados: null
             });
         }
@@ -72,21 +84,17 @@ const autenticar = async (request, response, next) => {
         if (statusEmpresa === 2) {
             return response.status(403).json({
                 sucesso: false,
-                mensagem: 'Acesso bloqueado: Esta empresa está classificada como INAPTA. Regularize as omissões fiscais.',
+                mensagem: 'Acesso bloqueado: Esta empresa está INAPTA. Regularize as omissões fiscais',
                 dados: null
             });
         }
-        
-        // Valida se o usuário tem vínculo ativo com a empresa
-        const [vinculos] = await db.query(
-            `SELECT 
-                usu_emp_nivel_acesso, 
-                usu_emp_data_vinculo,
-                usu_emp_status 
-            FROM USUARIO_EMPRESAS 
-            WHERE usu_id = ? AND emp_id = ? AND usu_emp_status = 1`,
-            [usuarioId, empresaId]
-        );
+
+        // Valida vínculo ativo do usuário com a empresa
+        const [vinculos] = await db.query(`
+            SELECT usu_emp_nivel_acesso, usu_emp_data_vinculo, usu_emp_status
+            FROM USUARIO_EMPRESAS
+            WHERE usu_id = ? AND emp_id = ? AND usu_emp_status = 1
+        `, [usuarioId, empresaId]);
 
         if (vinculos.length === 0) {
             return response.status(403).json({
@@ -96,7 +104,7 @@ const autenticar = async (request, response, next) => {
             });
         }
 
-        // Armazena as informações no objeto request para usar depois
+        // Armazena informações de autenticação no request para uso posterior
         request.usuario = {
             id: usuarioId,
             nome: usuarios[0].usu_nome
@@ -112,7 +120,7 @@ const autenticar = async (request, response, next) => {
             nivel: vinculos[0].usu_emp_nivel_acesso // 0 = Visualizador, 1 = Gerente, 2 = ADM
         };
 
-        // Disponibiliza o tipo de empresa para funções auxiliares
+        // Disponibiliza informações para middlewares e controllers
         request.nivelAcesso = vinculos[0].usu_emp_nivel_acesso;
         request.tipoEmpresa = empresas[0].emp_tipo;
 
@@ -121,21 +129,29 @@ const autenticar = async (request, response, next) => {
     } catch (error) {
         return response.status(401).json({
             sucesso: false,
-            mensagem: `Erro na autenticação: ${error.message}`,
+            mensagem: 'Erro na autenticação',
             dados: null
         });
     }
 };
 
 /**
- * Middleware de Autorização - Verifica se o usuário tem permissão para acessar um recurso
- * @param {Array} nivelPermitido - Array com níveis permitidos (ex: [1, 2] para Gerente e ADM)
+ * Middleware de Autorização por Nível de Acesso
+ * Verifica se o usuário tem o nível mínimo de permissão
+ *
+ * Níveis de acesso:
+ * - 0: Visualizador (apenas leitura)
+ * - 1: Gerente (leitura e escrita)
+ * - 2: Administrador (acesso total)
+ *
+ * @param {number[]} niveisPermitidos - Array com níveis permitidos (ex: [1, 2])
+ * @returns {Function} Middleware function
  */
-const autorizar = (nivelPermitido) => {
+const autorizar = (niveisPermitidos) => {
     return (request, response, next) => {
         const nivel = request.nivelAcesso;
 
-        if (!nivelPermitido.includes(nivel)) {
+        if (!niveisPermitidos.includes(nivel)) {
             return response.status(403).json({
                 sucesso: false,
                 mensagem: 'Você não tem permissão para realizar esta ação',
@@ -149,47 +165,40 @@ const autorizar = (nivelPermitido) => {
 
 /**
  * Middleware para validar permissões por tipo de empresa e nível de acesso
- * Define quem pode fazer cada operação
+ * Define quem pode fazer cada operação com base no tipo de empresa
+ *
+ * Tipos de empresa:
+ * - 0: ME (Microempresa)
+ * - 1: MEI (Microempreendedor Individual)
+ *
+ * @param {string} operacao - Código da operação a validar
+ * @returns {Function} Middleware function
  */
 const validarPermissao = (operacao) => {
     return (request, response, next) => {
         const tipoEmpresa = request.tipoEmpresa; // 0 = ME, 1 = MEI
         const nivel = request.nivelAcesso; // 0 = Visualizador, 1 = Gerente, 2 = ADM
 
-        // Mapeamento de permissões
+        // Mapeamento centralizado de permissões por operação
         const permissoes = {
-            // Upload de documentos - apenas ADM
+            // Documentos
             'upload_documento': [2],
-
-            // Download/visualização de documentos - ADM, Gerente e Visualizador
             'download_documento': [0, 1, 2],
             'visualizar_documento': [0, 1, 2],
 
-            // Editar informações da empresa - apenas Gerente e ADM
+            // Empresa
             'editar_empresa': [1, 2],
-
-            // Ver e inserir informações - Gerente e ADM
             'inserir_dados': [1, 2],
 
-            // Dashboard - todos os níveis
+            // Dashboard e Visualizações
             'ver_dashboard': [0, 1, 2],
-
-            // Impostos - para ME todos, para MEI todos
             'ver_impostos': [0, 1, 2],
-
-            // Faturamento - para ME todos, para MEI apenas notas emitidas
             'ver_faturamento': [0, 1, 2],
 
-            // Caixa - para ME todos
+            // Recursos específicos por tipo de empresa
             'ver_caixa': tipoEmpresa === 0 ? [0, 1, 2] : [],
-
-            // Prazos - para ME todos
             'ver_prazos': tipoEmpresa === 0 ? [0, 1, 2] : [],
-
-            // Perfil - para ME todos
             'ver_perfil': tipoEmpresa === 0 ? [0, 1, 2] : [],
-
-            // Controle Mensal - para MEI todos
             'ver_controle_mensal': tipoEmpresa === 1 ? [0, 1, 2] : []
         };
 

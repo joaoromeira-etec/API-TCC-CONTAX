@@ -165,7 +165,7 @@ module.exports = {
         }
     },
 
-    async listarUltimosDocumentos(request, response) {
+        async listarUltimosDocumentos(request, response) {
         try {
             const { limit = 10 } = request.query;
 
