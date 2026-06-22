@@ -30,7 +30,7 @@ SELECT p.praz_id, p.emp_id, e.emp_nome_fantasia, p.praz_descricao, p.praz_data_v
 FROM PRAZOS p
 INNER JOIN EMPRESAS e ON p.emp_id = e.emp_id;
 
-SELECT a.aud_id, a.usu_id, u.usu_nome, a.aud_acao, a.aud_tabela_afetada, a.aud_registro_afetado, a.aud_data_acao
+SELECT a.aud_id, a.usu_id, u.usu_nome, a.aud_acao, a.aud_tabela_afetada, a.aud_registro_afetado, a.aud_descricao, a.aud_operacao, a.aud_ip, a.aud_user_agent, a.aud_data_acao, a.aud_status
 FROM AUDITORIA a
 INNER JOIN USUARIOS u ON a.usu_id = u.usu_id;
 

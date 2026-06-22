@@ -100,9 +100,19 @@ CREATE TABLE PRAZOS (
 CREATE TABLE AUDITORIA (
     aud_id INT PRIMARY KEY AUTO_INCREMENT,
     usu_id INT,
-    aud_acao TINYINT NOT NULL, -- 0-Inserção; 1-Edição; 2-Exclusão
-    aud_tabela_afetada VARCHAR(30) NOT NULL,
+    aud_acao TINYINT NOT NULL COMMENT '0-Inserção; 1-Edição; 2-Exclusão',
+    aud_tabela_afetada VARCHAR(64) NOT NULL,
     aud_registro_afetado INT NOT NULL,
-    aud_data_acao DATETIME NOT NULL,
-    FOREIGN KEY (usu_id) REFERENCES USUARIOS(usu_id)
-);
+    aud_descricao VARCHAR(255) DEFAULT NULL,
+    aud_operacao VARCHAR(100) DEFAULT NULL,
+    aud_ip VARCHAR(45) DEFAULT NULL,
+    aud_user_agent VARCHAR(255) DEFAULT NULL,
+    aud_data_acao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    aud_status TINYINT NOT NULL DEFAULT 1 COMMENT '1-Ativo; 0-Inativo',
+    FOREIGN KEY (usu_id) REFERENCES USUARIOS(usu_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    INDEX idx_aud_data_acao (aud_data_acao),
+    INDEX idx_aud_tabela_afetada (aud_tabela_afetada),
+    INDEX idx_aud_status (aud_status),
+    CHECK (aud_acao IN (0, 1, 2)),
+    CHECK (aud_status IN (0, 1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

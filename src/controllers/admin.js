@@ -276,6 +276,7 @@ module.exports = {
             FROM AUDITORIA a
             LEFT JOIN USUARIOS u
                 ON u.usu_id = a.usu_id
+            WHERE a.aud_status = 1
             ORDER BY a.aud_data_acao DESC
             LIMIT ?
         `;

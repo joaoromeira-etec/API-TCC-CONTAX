@@ -13,6 +13,7 @@ module.exports = {
       const [total] = await db.query(`
         SELECT COUNT(*) as total
         FROM AUDITORIA
+        WHERE aud_status = 1
       `);
 
       const totalRegistros = total[0].total;
@@ -36,6 +37,7 @@ module.exports = {
         FROM AUDITORIA a
         LEFT JOIN USUARIOS u
           ON u.usu_id = a.usu_id
+        WHERE a.aud_status = 1
         ORDER BY a.aud_id DESC
         LIMIT ?, ?
       `;
@@ -274,7 +276,7 @@ module.exports = {
       }
 
       const [auditoria] = await db.query(
-        "SELECT aud_id FROM AUDITORIA WHERE aud_id = ?",
+        "SELECT aud_id FROM AUDITORIA WHERE aud_id = ? AND aud_status = 1",
         [id]
       );
 
@@ -408,11 +410,13 @@ module.exports = {
 
       const sql = `
         UPDATE AUDITORIA
-        SET aud_acao = 2
+        SET aud_status = 0,
+            aud_acao = 2
         WHERE aud_id = ?
       `;
 
       const [result] = await db.query(sql, [id]);
+
 
       if (result.affectedRows === 0) {
         return response.status(404).json({

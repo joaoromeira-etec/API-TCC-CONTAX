@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { autenticar, autorizar } = require('../middlewares/auth');
 
 // Importe dos controllers
 const regimeController = require('../controllers/regime');
@@ -24,10 +25,10 @@ router.delete('/prazos/del/:id', prazosController.ocultarPrazos); //Recomendado.
 
 
 // Rotas para Auditoria
-router.get('/auditoria',auditoriaController.listarAuditoria);
-router.post('/auditoria',auditoriaController.cadastrarAuditoria);
-router.patch('/auditoria/:id',auditoriaController.editarAuditoria);
-router.delete('/auditoria/:id',auditoriaController.apagarAuditoria);  //Não-Recomendado.
-router.delete('/auditoria/del/:id',auditoriaController.ocultarAuditoria); //Recomendado.
+router.get('/auditoria', autenticar, autorizar([1, 2]), auditoriaController.listarAuditoria);
+router.post('/auditoria', autenticar, autorizar([2]), auditoriaController.cadastrarAuditoria);
+router.patch('/auditoria/:id', autenticar, autorizar([2]), auditoriaController.editarAuditoria);
+router.delete('/auditoria/:id', autenticar, autorizar([2]), auditoriaController.apagarAuditoria);  //Não-Recomendado.
+router.delete('/auditoria/del/:id', autenticar, autorizar([1, 2]), auditoriaController.ocultarAuditoria); //Recomendado.
 
 module.exports = router;
