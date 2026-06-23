@@ -70,13 +70,13 @@ INSERT INTO DOCUMENTOS
 
 -- Inserts pra FINANCEIRO
 INSERT INTO FINANCEIRO
-(fin_id, doc_id, fin_valor_total, fin_categoria, fin_data_emissao, fin_status) VALUES
-(1, 1, 5000.00, 'Faturamento', '2026-06-01', 1),
-(2, 2, 1200.00, 'Imposto', '2026-06-05', 1),
-(3, 3, 800.00, 'Despesa', '2026-06-10', 1),
-(4, 4, 3500.00, 'Faturamento', '2026-06-12', 1),
-(5, 5, 400.00, 'Despesa', '2026-06-15', 1),
-(6, 6, 600.00, 'Imposto', '2026-06-18', 1);
+(fin_id, doc_id, fin_valor_total, fin_categoria,  fin_status, fin_data_emissao) VALUES
+(1, 1, 5000.00, 'Faturamento', 1, '2026-06-01'),
+(2, 2, 1200.00, 'Imposto', 1, '2026-06-05'),
+(3, 3, 800.00, 'Despesa', 1, '2026-06-10'),
+(4, 4, 3500.00, 'Faturamento', 1, '2026-06-12'),
+(5, 5, 400.00, 'Despesa', 1, '2026-06-15'),
+(6, 6, 600.00, 'Imposto', 1, '2026-06-18'),
 
 -- Inserts para PRAZOS
 INSERT INTO PRAZOS (praz_id, emp_id, praz_descricao, praz_status, praz_data_vencimento) VALUES
