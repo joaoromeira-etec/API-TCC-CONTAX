@@ -130,63 +130,109 @@ module.exports = {
     },
 
     async resumoFinanceiro(request, response) {
-        try {
+       try {
             const { mes, ano } = request.query;
             
-            // PROTEÇÃO IDOR & CONTÁBIL: Buscando direto do request injetado pelo middleware
             const emp_id = request.empresa.id;
             const tipoEmpresa = request.tipoEmpresa; // 0 = ME, 1 = MEI
 
-            const sql = `
+            // Parâmetros de data dinâmicos (pega o ano na programação, conforme regra)
+            const anoFiltro = ano ? parseInt(ano) : new Date().getFullYear();
+            const mesFiltro = mes ? parseInt(mes) : new Date().getMonth() + 1;
+
+            // 1. LÓGICA DE MESES ATIVOS (Controle Mensal MEI)
+            const sqlEmpresa = `SELECT emp_data_abertura FROM EMPRESAS WHERE emp_id = ?`;
+            const [empresaDados] = await db.query(sqlEmpresa, [emp_id]);
+            
+            // Fallback caso a tabela EMPRESAS não tenha a coluna emp_data_abertura ainda
+            const dataAbertura = empresaDados[0]?.emp_data_abertura || new Date(`${anoFiltro}-01-01`);
+            const anoAbertura = new Date(dataAbertura).getFullYear();
+            const mesAbertura = new Date(dataAbertura).getMonth() + 1;
+
+            let mesesAtivos = 12; 
+            
+            if (anoAbertura === anoFiltro) {
+                mesesAtivos = 12 - mesAbertura + 1; 
+            } else if (anoFiltro < anoAbertura) {
+                mesesAtivos = 0; 
+            }
+
+            // 2. BUSCA DO SALDO MENSAL (Entrada - Saída)
+            const sqlMensal = `
                 SELECT
-                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Faturamento' THEN f.fin_valor_total ELSE 0 END), 0) AS faturamento,
-                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Imposto' THEN f.fin_valor_total ELSE 0 END), 0) AS impostos,
-                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Despesa' THEN f.fin_valor_total ELSE 0 END), 0) AS despesas,
-                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Custo' THEN f.fin_valor_total ELSE 0 END), 0) AS custos
+                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Faturamento' THEN f.fin_valor_total ELSE 0 END), 0) AS entradas,
+                    COALESCE(SUM(CASE WHEN f.fin_categoria IN ('Imposto', 'Despesa', 'Custo') THEN f.fin_valor_total ELSE 0 END), 0) AS saidas
                 FROM FINANCEIRO f
                 INNER JOIN DOCUMENTOS d ON d.doc_id = f.doc_id
                 WHERE f.fin_status = 1
                 AND d.emp_id = ?
-                AND (? IS NULL OR MONTH(f.fin_data_emissao) = ?)
-                AND (? IS NULL OR YEAR(f.fin_data_emissao) = ?)
+                AND MONTH(f.fin_data_emissao) = ?
+                AND YEAR(f.fin_data_emissao) = ?
             `;
+            
+            const [dadosMensais] = await db.query(sqlMensal, [emp_id, mesFiltro, anoFiltro]);
+            
+            const totalEntradas = Number(dadosMensais[0]?.entradas || 0);
+            const totalSaidas = Number(dadosMensais[0]?.saidas || 0);
+            const saldoMensal = totalEntradas - totalSaidas;
 
-            const [rows] = await db.query(sql, [
-                emp_id,
-                mes || null, mes || null,
-                ano || null, ano || null
-            ]);
+            // 3. BUSCA DO FATURAMENTO ANUAL ACUMULADO
+            const sqlAnual = `
+                SELECT COALESCE(SUM(fin_valor_total), 0) AS faturamento_anual
+                FROM FINANCEIRO f
+                INNER JOIN DOCUMENTOS d ON d.doc_id = f.doc_id
+                WHERE f.fin_status = 1
+                AND d.emp_id = ?
+                AND f.fin_categoria = 'Faturamento'
+                AND YEAR(f.fin_data_emissao) = ?
+            `;
+            
+            const [dadosAnuais] = await db.query(sqlAnual, [emp_id, anoFiltro]);
+            const faturamentoAnual = Number(dadosAnuais[0]?.faturamento_anual || 0);
 
-            const faturamento = Number(rows[0]?.faturamento || 0);
-            const impostos = Number(rows[0]?.impostos || 0);
-            const despesas = Number(rows[0]?.despesas || 0);
-            const custos = Number(rows[0]?.custos || 0);
+            // 4. APLICAÇÃO DOS LIMITES LEGAIS
+            let limiteAnualPermitido = 0;
+            
+            if (tipoEmpresa === 1) {
+                // MEI: (81.000 / 12) * número de meses ativos
+                limiteAnualPermitido = (81000 / 12) * mesesAtivos;
+            } else {
+                // ME: Limite Teto Padrão Anual
+                limiteAnualPermitido = 360000; 
+            }
 
-            const lucro = faturamento - impostos - despesas - custos;
-
-            // INTELIGÊNCIA CONTÁBIL DINÂMICA: Ajustando os limites com base no regime (MEI vs ME)
-            const limiteMensal = tipoEmpresa === 1 ? 6750 : 30000; 
-                
-            const percentualLimite = limiteMensal > 0 ? (faturamento / limiteMensal) * 100 : 0;
+            const percentualLimite = limiteAnualPermitido > 0 ? (faturamentoAnual / limiteAnualPermitido) * 100 : 0;
             let statusLimite = 'Saudável';
 
-            if (percentualLimite >= 80) {
+            if (percentualLimite >= 100) {
+                statusLimite = 'Estourado';
+            } else if (percentualLimite >= 80) {
                 statusLimite = 'Risco';
             } else if (percentualLimite >= 50) {
                 statusLimite = 'Atenção';
             }
 
+            // 5. RESPOSTA DA API
             return response.status(200).json({
                 sucesso: true,
-                mensagem: 'Resumo financeiro obtido com sucesso.',
+                mensagem: 'Resumo financeiro e fiscal calculado com sucesso.',
                 dados: {
-                    faturamento,
-                    impostos, // Valores reais e exatos preenchidos pelo Gerente (ME) ou DAS fixo (MEI)
-                    despesas,
-                    custos,
-                    lucro,
-                    percentual_limite: percentualLimite,
-                    status_limite: statusLimite,
+                    periodo: {
+                        mes: mesFiltro,
+                        ano: anoFiltro,
+                        meses_ativos_no_ano: mesesAtivos
+                    },
+                    mensal: {
+                        entradas: totalEntradas,
+                        saidas: totalSaidas,
+                        saldo_mensal: saldoMensal
+                    },
+                    anual: {
+                        faturamento_acumulado: faturamentoAnual,
+                        teto_permitido: limiteAnualPermitido,
+                        percentual_utilizado: parseFloat(percentualLimite.toFixed(2)),
+                        status_fiscal: statusLimite
+                    },
                     regime_empresa: tipoEmpresa === 1 ? 'MEI' : 'ME'
                 }
             });
@@ -194,7 +240,7 @@ module.exports = {
         } catch (error) {
             return response.status(500).json({
                 sucesso: false,
-                mensagem: 'Erro ao obter resumo financeiro.',
+                mensagem: 'Erro ao processar cálculos do resumo financeiro.',
                 dados: error.message
             });
         }
