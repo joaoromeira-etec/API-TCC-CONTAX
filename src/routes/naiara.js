@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const { autenticar } = require('../middlewares/auth');
+
 const usuariosController = require('../controllers/usuarios');
 const empresasController = require('../controllers/empresas');
 const usuarioEmpresaController = require('../controllers/usuarioEmpresa');
@@ -24,13 +26,13 @@ router.patch('/empresas/:id', empresasController.editarEmpresas);
 router.delete('/empresas/:id', empresasController.apagarEmpresas);
 router.delete('/empresas/del/:id', empresasController.ocultarEmpresas);
 
-router.get('/financeiro', financeiroController.listarFinanceiro);
-router.get('/financeiro/resumo', financeiroController.resumoFinanceiro);
-router.post('/financeiro', financeiroController.cadastrarFinanceiro);
-router.post('/financeiro/extrair/:doc_id', financeiroController.extrairFinanceiroDoDocumento);
-router.patch('/financeiro/:id', financeiroController.editarFinanceiro);
-router.delete('/financeiro/:id', financeiroController.apagarFinanceiro);
-router.delete('/financeiro/del/:id', financeiroController.ocultarFinanceiro);
+router.get('/financeiro', autenticar, financeiroController.listarFinanceiro);
+router.get('/financeiro/resumo', autenticar, financeiroController.resumoFinanceiro);
+router.post('/financeiro', autenticar, financeiroController.cadastrarFinanceiro);
+router.post('/financeiro/extrair/:doc_id', autenticar, financeiroController.extrairFinanceiroDoDocumento);
+router.patch('/financeiro/:id', autenticar, financeiroController.editarFinanceiro);
+router.delete('/financeiro/:id', autenticar, financeiroController.apagarFinanceiro);
+router.delete('/financeiro/del/:id', autenticar, financeiroController.ocultarFinanceiro);
 
 
 router.get('/usuario_empresas', usuarioEmpresaController.listarUsuarioEmpresa);
