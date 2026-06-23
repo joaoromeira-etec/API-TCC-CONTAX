@@ -515,15 +515,7 @@ module.exports = {
 },
     async editarUsuarios(request, response) {
     try {
-        const {
-            nome,
-            email,
-            cpf,
-            senha,
-            telefone,
-            status,
-            alterar_senha
-        } = request.body;
+        const { nome, email, cpf, senha, telefone, status, alterar_senha } = request.body;
 
         const { id } = request.params;
 

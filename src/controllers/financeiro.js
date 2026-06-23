@@ -226,8 +226,8 @@ module.exports = {
 
             // CONTROLE DE ACESSO CORPORATIVO: Apenas Gerentes (ex: nível >= 2) lançam impostos para ME
             if (categoria === 'Imposto' && tipoEmpresa === 0) {
-                const nivelMinimoGerente = 2; // Ajuste este número conforme a lógica do seu banco
-                if (!nivelAcesso || nivelAcesso < nivelMinimoGerente) {
+                const nivelMinimoGerente = 1; 
+                if (!nivelAcesso === undefined || nivelAcesso < nivelMinimoGerente) {
                     return response.status(403).json({
                         sucesso: false,
                         mensagem: 'Operação negada: Apenas usuários com nível de Gerente podem lançar impostos para uma Microempresa (ME).',
@@ -405,8 +405,8 @@ module.exports = {
 
             // CONTROLE DE ACESSO CORPORATIVO (OCR): Se a IA ler e achar um "Imposto" em uma ME, barra se não for Gerente
             if (dadosExtraidos.fin_categoria === 'Imposto' && tipoEmpresa === 0) {
-                const nivelMinimoGerente = 2;
-                if (!nivelAcesso || nivelAcesso < nivelMinimoGerente) {
+                const nivelMinimoGerente = 1;
+                if (!nivelAcesso === undefined || nivelAcesso < nivelMinimoGerente) {
                     return response.status(403).json({
                         sucesso: false,
                         mensagem: 'Operação negada: O arquivo processado refere-se a Impostos. Apenas usuários Gerentes podem homologar este lançamento para MEs.',
@@ -492,8 +492,8 @@ module.exports = {
 
             // CONTROLE DE ACESSO CORPORATIVO (EDIÇÃO): Protegendo a edição de Impostos da ME
             if (categoria === 'Imposto' && tipoEmpresa === 0) {
-                const nivelMinimoGerente = 2;
-                if (!nivelAcesso || nivelAcesso < nivelMinimoGerente) {
+                const nivelMinimoGerente = 1;
+                if (!nivelAcesso === undefined || nivelAcesso < nivelMinimoGerente) {
                     return response.status(403).json({
                         sucesso: false,
                         mensagem: 'Operação negada: Alterações na categoria de Impostos para ME exigem nível de Gerente.',

@@ -27,9 +27,9 @@ router.delete('/tipoDocumentos/del/:id', TipoDocumentosController.ocultarTipoDoc
 
 // Rotas para Documentos
 router.get('/documentos', DocumentosController.listarDocumentos);
-router.post('/documentos',upload.single('img'),DocumentosController.cadastrarDocumentos);
 router.get('/documentos/download/:id', DocumentosController.downloadDocumento);
 router.get('/documentos/preview/:id', DocumentosController.previewDocumento);
+router.post('/documentos',upload.single('img'),DocumentosController.cadastrarDocumentos);
 router.patch('/documentos/:id', upload.single('arquivo'), DocumentosController.editarDocumentos);
 router.delete('/documentos/:id', DocumentosController.apagarDocumentos); //Não-Recomendado.
 router.delete('/documentos/del/:id', DocumentosController.ocultarDocumentos); //Recomendado.
