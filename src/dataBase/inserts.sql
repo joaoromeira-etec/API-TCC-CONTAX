@@ -88,10 +88,10 @@ INSERT INTO PRAZOS (praz_id, emp_id, praz_descricao, praz_status, praz_data_venc
 (6, 6, 'Revisão Contrato', 2, '2023-08-12');
 
 -- Inserts para AUDITORIA (removido aud_status e usando DATETIME)
-INSERT INTO AUDITORIA (aud_id, usu_id, aud_acao, aud_tabela_afetada, aud_registro_afetado, aud_data_acao) VALUES
-(1, 1, 0, 'USUARIOS', 1, '2023-01-01 00:00:00'),
-(2, 2, 1, 'EMPRESAS', 2, '2023-02-01 00:00:00'),
-(3, 3, 2, 'DOCUMENTOS', 3, '2023-03-01 00:00:00'),
-(4, 4, 0, 'REGIME', 4, '2023-04-01 00:00:00'),
-(5, 5, 1, 'PRAZOS', 5, '2023-05-01 00:00:00'),
-(6, 6, 2, 'SUPORTE', 6, '2023-06-01 00:00:00');
+INSERT INTO AUDITORIA (aud_id,  usu_id,  aud_acao,  aud_tabela_afetada,  aud_registro_afetado,  aud_descricao,  aud_operacao,  aud_ip,  aud_user_agent,  aud_data_acao,  aud_status) VALUES
+(1, 1, 0, 'USUARIOS', 1, 'Criação do usuário administrador inicial.', 'INSERT_USER', '127.0.0.1', 'Insomnia Rest Client', '2023-01-01 00:00:00', 1),
+(2, 2, 1, 'EMPRESAS', 2, 'Atualização dos dados cadastrais da empresa.', 'UPDATE_COMPANY', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2023-02-01 00:00:00', 1),
+(3, 3, 2, 'DOCUMENTOS', 3, 'Exclusão de documento duplicado pelo usuário.', 'DELETE_DOCUMENT', '192.168.1.50', 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', '2023-03-01 00:00:00', 1),
+(4, 4, 0, 'REGIME', 4, 'Cadastro de novo regime tributário para teste.', 'INSERT_REGIME', '127.0.0.1', 'Insomnia Rest Client', '2023-04-01 00:00:00', 1),
+(5, 5, 1, 'PRAZOS', 5, 'Alteração na data de vencimento da obrigação.', 'UPDATE_DEADLINE', '192.168.1.55', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', '2023-05-01 00:00:00', 1),
+(6, 6, 2, 'SUPORTE', 6, 'Encerramento de chamado de suporte técnico.', 'DELETE_SUPPORT', '127.0.0.1', 'Mozilla/5.0 (Linux; Android 10)', '2023-06-01 00:00:00', 1);

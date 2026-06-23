@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 
+const { autenticar } = require('../middlewares/auth');
+
 const upload = multer({
     dest: 'uploads/'
 });
@@ -11,8 +13,10 @@ const TipoDocumentosController = require('../controllers/tipoDocumentos');
 const DocumentosController = require('../controllers/documentos');
 const RegimeEmpresaController = require('../controllers/regimeEmpresa');
 const AdminController = require('../controllers/admin');
+const dashboardController = require('../controllers/dashboard')
 //const uploadImage = require('../controllers/uploadHelper');
 //const uploadDocumentos = uploadImage('documentos');
+
 
 // Rotas para Tipo de Documentos
 router.get('/tipoDocumentos', TipoDocumentosController.listarTipoDocumentos);
@@ -20,7 +24,6 @@ router.post('/tipoDocumentos', TipoDocumentosController.cadastrarTipoDocumentos)
 router.patch('/tipoDocumentos/:id', TipoDocumentosController.editarTipoDocumentos); // Params.
 router.delete('/tipoDocumentos/:id', TipoDocumentosController.apagarTipoDocumentos); // Params, Não-Recomendado.
 router.delete('/tipoDocumentos/del/:id', TipoDocumentosController.ocultarTipoDocumentos); // Params, Recomendado.
-
 
 // Rotas para Documentos
 router.get('/documentos', DocumentosController.listarDocumentos);
@@ -45,5 +48,21 @@ router.get('/admin/ultimos-documentos', AdminController.listarUltimosDocumentos)
 router.get('/admin/prazos-pendentes', AdminController.listarPrazosPendentes);
 router.get('/admin/auditoria-recente', AdminController.listarAuditoriaRecente);
 router.get('/admin/financeiro-mensal',AdminController.listarFinanceiroMensal);
+
+// Rotas para o Dashboard (Protegidas)
+router.get('/dashboard/abas', dashboardController.obterAbas);
+router.get('/dashboard/resumo', dashboardController.obterResumoDashboard);
+router.get('/dashboard/impostos', dashboardController.obterImpostos);
+router.get('/dashboard/faturamento', dashboardController.obterFaturamento);
+router.get('/dashboard/caixa', dashboardController.obterCaixa);
+router.get('/dashboard/prazos', dashboardController.obterPrazos);
+
+// Rotas para o Dashboard (Protegidas)
+//router.get('/dashboard/abas', autenticar, dashboardController.obterAbas);
+//router.get('/dashboard/resumo', autenticar, dashboardController.obterResumoDashboard);
+//router.get('/dashboard/impostos', autenticar, dashboardController.obterImpostos);
+//router.get('/dashboard/faturamento', autenticar, dashboardController.obterFaturamento);
+//router.get('/dashboard/caixa', autenticar, dashboardController.obterCaixa);
+//router.get('/dashboard/prazos', autenticar, dashboardController.obterPrazos);
 
 module.exports = router

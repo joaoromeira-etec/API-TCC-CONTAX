@@ -7,8 +7,9 @@ module.exports = {
      */
     async obterAbas(request, response) {
         try {
-            const tipoEmpresa = request.tipoEmpresa; // 0 = ME, 1 = MEI
-            const nivelAcesso = request.nivelAcesso;
+            // Se não houver middleware, pega da URL (?tipoEmpresa=0&nivelAcesso=1) ou assume padrão
+            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0); // 0 = ME, 1 = MEI
+            const nivelAcesso = request.nivelAcesso !== undefined ? request.nivelAcesso : Number(request.query.nivelAcesso || 1);
 
             const abas = getAbasDisponiveis(tipoEmpresa);
 
@@ -44,8 +45,9 @@ module.exports = {
      */
     async obterResumoDashboard(request, response) {
         try {
-            const empresaId = request.empresa.id;
-            const tipoEmpresa = request.tipoEmpresa;
+            // Proteção adaptativa para rodar com ou sem middleware
+            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
+            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0);
 
             // Busca quantidade de documentos
             const sqlDocumentos = `
@@ -84,8 +86,8 @@ module.exports = {
                     id: empresaId,
                     tipo: tipoEmpresa === 0 ? 'ME' : 'MEI'
                 },
-                documentos: docResult[0].total_documentos,
-                prazos_pendentes: prazResult[0].total_prazos,
+                documentos: docResult[0]?.total_documentos || 0,
+                prazos_pendentes: prazResult[0]?.total_prazos || 0,
                 ...(tipoEmpresa === 0 && { financeiro })
             };
 
@@ -106,16 +108,15 @@ module.exports = {
 
     /**
      * Retorna informações de impostos por tipo de empresa
-     * Para ME: mostra "Impostos"
-     * Para MEI: mostra "DAS"
      */
     async obterImpostos(request, response) {
         try {
-            const empresaId = request.empresa.id;
-            const tipoEmpresa = request.tipoEmpresa;
+            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
+            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0);
+            const nivelAcesso = request.nivelAcesso !== undefined ? request.nivelAcesso : Number(request.query.nivelAcesso || 1);
 
             // Para MEI, visualizador não tem acesso
-            if (tipoEmpresa === 1 && request.nivelAcesso === 0) {
+            if (tipoEmpresa === 1 && nivelAcesso === 0) {
                 return response.status(403).json({
                     sucesso: false,
                     mensagem: 'Você não tem permissão para visualizar impostos',
@@ -165,7 +166,7 @@ module.exports = {
      */
     async obterFaturamento(request, response) {
         try {
-            const empresaId = request.empresa.id;
+            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
 
             const sqlFaturamento = `
                 SELECT 
@@ -212,7 +213,7 @@ module.exports = {
      */
     async obterCaixa(request, response) {
         try {
-            const tipoEmpresa = request.tipoEmpresa;
+            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0);
 
             // Caixa é apenas para ME
             if (tipoEmpresa !== 0) {
@@ -223,7 +224,7 @@ module.exports = {
                 });
             }
 
-            const empresaId = request.empresa.id;
+            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
 
             const sqlCaixa = `
                 SELECT 
@@ -277,7 +278,7 @@ module.exports = {
      */
     async obterPrazos(request, response) {
         try {
-            const empresaId = request.empresa.id;
+            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
 
             const sqlPrazos = `
                 SELECT 

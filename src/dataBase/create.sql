@@ -82,7 +82,7 @@ CREATE TABLE FINANCEIRO (
     fin_id INT PRIMARY KEY AUTO_INCREMENT,
     doc_id INT NOT NULL,
     fin_valor_total DECIMAL(10,2) NOT NULL,
-    fin_categoria ENUM('Faturamento', 'Imposto', 'Despesa') NOT NULL,
+    fin_categoria ENUM('Faturamento', 'Imposto', 'Despesa', 'Custo') NOT NULL,
     fin_status BIT NOT NULL,
     fin_data_emissao DATE,
     FOREIGN KEY (doc_id) REFERENCES DOCUMENTOS(doc_id) ON DELETE CASCADE
