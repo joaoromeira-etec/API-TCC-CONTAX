@@ -337,6 +337,13 @@ module.exports = {
             const tipoEmpresa = request.tipoEmpresa;
             const nivelAcesso = request.nivelAcesso;
 
+            function formatarDataParaSQL(dataBR) {
+                if (!dataBR) return null;
+                // Transforma 'DD/MM/YYYY' em 'YYYY-MM-DD'
+                const [dia, mes, ano] = dataBR.split('/');
+                return `${ano}-${mes}-${dia}`;
+            }
+
             if (!doc_id || isNaN(doc_id)) {
                 return response.status(400).json({
                     sucesso: false,
@@ -426,7 +433,7 @@ module.exports = {
                 parseInt(doc_id),
                 dadosExtraidos.fin_valor_total,
                 dadosExtraidos.fin_categoria,
-                dadosExtraidos.fin_data_emissao || new Date()
+                formatarDataParaSQL(dadosExtraidos.fin_data_emissao) || new Date()
             ]);
 
             return response.status(201).json({
