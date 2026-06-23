@@ -53,6 +53,7 @@ module.exports = {
         const sql = `
             SELECT
                 u.usu_id,
+                ue.usu_emp_id
                 u.usu_nome,
                 u.usu_email,
                 u.usu_cpf,

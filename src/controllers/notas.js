@@ -1,0 +1,82 @@
+const db = require('../controllers/connection');
+
+module.exports = {
+    async cadastrarNota(request, response) {
+        try {
+        // 1. Validações Iniciais do Arquivo
+        if (!request.file) {
+            return response.status(400).json({ sucesso: false, mensagem: 'O arquivo PDF da nota é obrigatório.' });
+        }
+        const { path: arquivoPath, originalname } = request.file;
+
+        // 2. Captura os dados combinados (Documento + Financeiro) vindos do formulário do MenuAdm
+        const { 
+            emp_id,          // Empresa cliente destino
+            tpd_id,          // Tipo de documento (ex: Nota Fiscal)
+            doc_observacao, 
+            doc_data_vencimento,
+            fin_valor,       // <--- DADO FINANCEIRO: Valor da nota
+            fin_categoria    // <--- DADO FINANCEIRO: Categoria (Imposto, Serviço, etc.)
+        } = request.body;
+
+        const usuarioId = request.user?.id || request.usuario?.id || null;
+
+        // Validação básica dos IDs cruciais
+        if (!emp_id || !tpd_id || !fin_valor) {
+            return response.status(400).json({ sucesso: false, mensagem: 'Empresa, Tipo de documento e Valor são obrigatórios.' });
+        }
+
+        // ==========================================================
+        // PASSO 1: Inserir na tabela DOCUMENTOS (A tua parte)
+        // ==========================================================
+        const sqlDoc = `
+            INSERT INTO DOCUMENTOS (usu_id, emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_observacao, doc_data_vencimento, doc_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        `;
+        const [docResult] = await db.query(sqlDoc, [
+            usuarioId, 
+            parseInt(emp_id), 
+            parseInt(tpd_id), 
+            arquivoPath, 
+            originalname, 
+            doc_observacao || null, 
+            doc_data_vencimento || null
+        ]);
+
+        const novoDocId = docResult.insertId; // ID do documento gerado
+
+        // ==========================================================
+        // PASSO 2: Inserir na tabela FINANCEIRO (A parte da Naiara)
+        // ==========================================================
+        // Criamos o registro financeiro já atrelado ao documento que acabou de nascer
+        const sqlFin = `
+            INSERT INTO FINANCEIRO (emp_id, doc_id, fin_valor, fin_categoria, fin_data_lancamento, fin_status)
+            VALUES (?, ?, ?, ?, NOW(), 1)
+        `;
+        await db.query(sqlFin, [
+            parseInt(emp_id),
+            novoDocId, // <--- O VÍNCULO AQUI!
+            parseFloat(fin_valor),
+            fin_categoria || 'Nota Lançada'
+        ]);
+
+        // 3. Retorno de sucesso absoluto para o Frontend
+        return response.status(201).json({
+            sucesso: true,
+            mensagem: 'Nota lançada com sucesso! Documento salvo e financeiro gerado.',
+            dados: {
+                doc_id: novoDocId,
+                emp_id: parseInt(emp_id),
+                valor_lançado: parseFloat(fin_valor)
+            }
+        });
+
+    } catch (error) {
+        return response.status(500).json({
+            sucesso: false,
+            mensagem: 'Erro ao processar o lançamento combinado da nota.',
+            dados: error.message
+        });
+    }
+  },
+}
