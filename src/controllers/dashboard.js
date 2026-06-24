@@ -1,24 +1,51 @@
 const db = require('../dataBase/connection');
-const { getAbasDisponiveis, temPermissao } = require('../utils/permissoes');
+const { getAbasDisponiveis } = require('../utils/permissoes');
+
+function getEmpresaId(request) {
+    return request.empresa
+        ? request.empresa.id
+        : Number(request.query.emp_id || request.query.empresaId);
+}
+
+function getTipoEmpresa(request) {
+    return request.tipoEmpresa !== undefined
+        ? request.tipoEmpresa
+        : Number(request.query.tipoEmpresa || 0);
+}
+
+function getNivelAcesso(request) {
+    return request.nivelAcesso !== undefined
+        ? request.nivelAcesso
+        : Number(request.query.nivelAcesso || 1);
+}
+
+function validarEmpresa(empresaId, response) {
+    if (!empresaId) {
+        response.status(400).json({
+            sucesso: false,
+            mensagem: 'Empresa não informada.',
+            dados: null
+        });
+
+        return false;
+    }
+
+    return true;
+}
 
 module.exports = {
-    /**
-     * Retorna as abas disponíveis para o usuário baseado em seu tipo de empresa
-     */
     async obterAbas(request, response) {
         try {
-            // Se não houver middleware, pega da URL (?tipoEmpresa=0&nivelAcesso=1) ou assume padrão
-            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0); // 0 = ME, 1 = MEI
-            const nivelAcesso = request.nivelAcesso !== undefined ? request.nivelAcesso : Number(request.query.nivelAcesso || 1);
+            const tipoEmpresa = getTipoEmpresa(request);
+            const nivelAcesso = getNivelAcesso(request);
 
             const abas = getAbasDisponiveis(tipoEmpresa);
 
-            // Filtra as abas de impostos se for visualizador
-            const abasDisponibles = abas.filter(aba => {
-                // Visualizador (0) não tem acesso a impostos
+            const abasDisponiveis = abas.filter((aba) => {
                 if (nivelAcesso === 0 && aba === 'Impostos') {
                     return false;
                 }
+
                 return true;
             });
 
@@ -28,9 +55,10 @@ module.exports = {
                 dados: {
                     tipo_empresa: tipoEmpresa === 0 ? 'ME' : 'MEI',
                     nivel_acesso: nivelAcesso,
-                    abas: abasDisponibles
+                    abas: abasDisponiveis
                 }
             });
+
         } catch (error) {
             return response.status(500).json({
                 sucesso: false,
@@ -40,55 +68,73 @@ module.exports = {
         }
     },
 
-    /**
-     * Retorna resumo do dashboard para o usuário
-     */
     async obterResumoDashboard(request, response) {
         try {
-            // Proteção adaptativa para rodar com ou sem middleware
-            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
-            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0);
+            const empresaId = getEmpresaId(request);
+            const tipoEmpresa = getTipoEmpresa(request);
 
-            // Busca quantidade de documentos
+            if (!validarEmpresa(empresaId, response)) return;
+
             const sqlDocumentos = `
-                SELECT COUNT(*) as total_documentos
+                SELECT COUNT(*) AS total_documentos
                 FROM DOCUMENTOS
-                WHERE emp_id = ? AND doc_status = 1
+                WHERE emp_id = ?
+                AND doc_status = 1
             `;
-            const [docResult] = await db.query(sqlDocumentos, [empresaId]);
 
-            // Busca prazos pendentes
             const sqlPrazos = `
-                SELECT COUNT(*) as total_prazos
+                SELECT COUNT(*) AS total_prazos
                 FROM PRAZOS
-                WHERE emp_id = ? AND praz_status = 0
+                WHERE emp_id = ?
+                AND praz_status = 0
             `;
-            const [prazResult] = await db.query(sqlPrazos, [empresaId]);
 
-            // Para ME: busca informações de financeiro
-            let financeiro = null;
-            if (tipoEmpresa === 0) {
-                const sqlFinanceiro = `
-                    SELECT 
-                        SUM(CASE WHEN f.fin_categoria = 'Faturamento' THEN f.fin_valor_total ELSE 0 END) as total_faturamento,
-                        SUM(CASE WHEN f.fin_categoria = 'Imposto' THEN f.fin_valor_total ELSE 0 END) as total_impostos,
-                        SUM(CASE WHEN f.fin_categoria = 'Despesa' THEN f.fin_valor_total ELSE 0 END) as total_despesas
-                    FROM FINANCEIRO f
-                    INNER JOIN DOCUMENTOS d ON d.doc_id = f.doc_id
-                    WHERE d.emp_id = ? AND f.fin_status = 1
-                `;
-                const [finResult] = await db.query(sqlFinanceiro, [empresaId]);
-                financeiro = finResult[0];
-            }
+            const sqlFinanceiro = `
+                SELECT
+                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Faturamento' THEN f.fin_valor_total ELSE 0 END), 0) AS total_faturamento,
+                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Imposto' THEN f.fin_valor_total ELSE 0 END), 0) AS total_impostos,
+                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Despesa' THEN f.fin_valor_total ELSE 0 END), 0) AS total_despesas,
+                    COALESCE(SUM(CASE WHEN f.fin_categoria = 'Custo' THEN f.fin_valor_total ELSE 0 END), 0) AS total_custos
+                FROM FINANCEIRO f
+                INNER JOIN DOCUMENTOS d
+                    ON d.doc_id = f.doc_id
+                WHERE d.emp_id = ?
+                AND f.fin_status = 1
+            `;
+
+            const [docResult] = await db.query(sqlDocumentos, [empresaId]);
+            const [prazResult] = await db.query(sqlPrazos, [empresaId]);
+            const [finResult] = await db.query(sqlFinanceiro, [empresaId]);
+
+            const financeiro = finResult[0] || {};
+
+            const totalFaturamento = Number(financeiro.total_faturamento || 0);
+            const totalImpostos = Number(financeiro.total_impostos || 0);
+            const totalDespesas = Number(financeiro.total_despesas || 0);
+            const totalCustos = Number(financeiro.total_custos || 0);
+
+            const limiteMensal = tipoEmpresa === 1 ? 6750 : 20000;
+            const percentualLimite = limiteMensal > 0
+                ? Math.min((totalFaturamento / limiteMensal) * 100, 100)
+                : 0;
 
             const resumo = {
                 empresa: {
                     id: empresaId,
-                    tipo: tipoEmpresa === 0 ? 'ME' : 'MEI'
+                    tipo: tipoEmpresa === 0 ? 'ME' : 'MEI',
+                    limite_mensal: limiteMensal
                 },
                 documentos: docResult[0]?.total_documentos || 0,
                 prazos_pendentes: prazResult[0]?.total_prazos || 0,
-                ...(tipoEmpresa === 0 && { financeiro })
+                financeiro: {
+                    faturamento: totalFaturamento,
+                    impostos: totalImpostos,
+                    despesas: totalDespesas,
+                    custos: totalCustos,
+                    saldo: totalFaturamento - totalImpostos - totalDespesas - totalCustos,
+                    percentual_limite: percentualLimite,
+                    limite_restante: Math.max(limiteMensal - totalFaturamento, 0)
+                }
             };
 
             return response.status(200).json({
@@ -106,36 +152,37 @@ module.exports = {
         }
     },
 
-    /**
-     * Retorna informações de impostos por tipo de empresa
-     */
     async obterImpostos(request, response) {
         try {
-            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
-            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0);
-            const nivelAcesso = request.nivelAcesso !== undefined ? request.nivelAcesso : Number(request.query.nivelAcesso || 1);
+            const empresaId = getEmpresaId(request);
+            const tipoEmpresa = getTipoEmpresa(request);
+            const nivelAcesso = getNivelAcesso(request);
 
-            // Para MEI, visualizador não tem acesso
-            if (tipoEmpresa === 1 && nivelAcesso === 0) {
+            if (!validarEmpresa(empresaId, response)) return;
+
+            if (nivelAcesso === 0) {
                 return response.status(403).json({
                     sucesso: false,
-                    mensagem: 'Você não tem permissão para visualizar impostos',
+                    mensagem: 'Visualizador não possui permissão para visualizar impostos.',
                     dados: null
                 });
             }
 
             const sqlImpostos = `
-                SELECT 
+                SELECT
                     f.fin_id,
+                    d.doc_id,
                     d.doc_nome_original,
                     f.fin_valor_total,
+                    f.fin_categoria,
                     f.fin_data_emissao,
-                    f.fin_status
+                    CAST(f.fin_status AS UNSIGNED) AS fin_status
                 FROM FINANCEIRO f
-                INNER JOIN DOCUMENTOS d ON d.doc_id = f.doc_id
-                WHERE d.emp_id = ? 
-                    AND f.fin_categoria = 'Imposto'
-                    AND f.fin_status = 1
+                INNER JOIN DOCUMENTOS d
+                    ON d.doc_id = f.doc_id
+                WHERE d.emp_id = ?
+                AND f.fin_categoria = 'Imposto'
+                AND f.fin_status = 1
                 ORDER BY f.fin_data_emissao DESC
                 LIMIT 50
             `;
@@ -161,33 +208,36 @@ module.exports = {
         }
     },
 
-    /**
-     * Retorna informações de faturamento/notas emitidas
-     */
     async obterFaturamento(request, response) {
         try {
-            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
+            const empresaId = getEmpresaId(request);
+
+            if (!validarEmpresa(empresaId, response)) return;
 
             const sqlFaturamento = `
-                SELECT 
+                SELECT
                     f.fin_id,
+                    d.doc_id,
                     d.doc_nome_original,
                     f.fin_valor_total,
                     f.fin_data_emissao,
-                    f.fin_status
+                    CAST(f.fin_status AS UNSIGNED) AS fin_status
                 FROM FINANCEIRO f
-                INNER JOIN DOCUMENTOS d ON d.doc_id = f.doc_id
-                WHERE d.emp_id = ? 
-                    AND f.fin_categoria = 'Faturamento'
-                    AND f.fin_status = 1
+                INNER JOIN DOCUMENTOS d
+                    ON d.doc_id = f.doc_id
+                WHERE d.emp_id = ?
+                AND f.fin_categoria = 'Faturamento'
+                AND f.fin_status = 1
                 ORDER BY f.fin_data_emissao DESC
                 LIMIT 50
             `;
 
             const [faturamento] = await db.query(sqlFaturamento, [empresaId]);
 
-            // Calcula total de faturamento
-            const totalFaturamento = faturamento.reduce((acc, item) => acc + item.fin_valor_total, 0);
+            const totalFaturamento = faturamento.reduce(
+                (acc, item) => acc + Number(item.fin_valor_total || 0),
+                0
+            );
 
             return response.status(200).json({
                 sucesso: true,
@@ -208,52 +258,63 @@ module.exports = {
         }
     },
 
-    /**
-     * Retorna informações de caixa (apenas ME)
-     */
     async obterCaixa(request, response) {
         try {
-            const tipoEmpresa = request.tipoEmpresa !== undefined ? request.tipoEmpresa : Number(request.query.tipoEmpresa || 0);
+            const empresaId = getEmpresaId(request);
+            const tipoEmpresa = getTipoEmpresa(request);
 
-            // Caixa é apenas para ME
+            if (!validarEmpresa(empresaId, response)) return;
+
             if (tipoEmpresa !== 0) {
                 return response.status(403).json({
                     sucesso: false,
-                    mensagem: 'Caixa está disponível apenas para Microempresas',
+                    mensagem: 'Caixa está disponível apenas para Microempresas.',
                     dados: null
                 });
             }
 
-            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
-
             const sqlCaixa = `
-                SELECT 
+                SELECT
                     f.fin_id,
                     f.fin_categoria,
                     f.fin_valor_total,
                     f.fin_data_emissao,
+                    d.doc_id,
                     d.doc_nome_original
                 FROM FINANCEIRO f
-                INNER JOIN DOCUMENTOS d ON d.doc_id = f.doc_id
-                WHERE d.emp_id = ? AND f.fin_status = 1
+                INNER JOIN DOCUMENTOS d
+                    ON d.doc_id = f.doc_id
+                WHERE d.emp_id = ?
+                AND f.fin_status = 1
                 ORDER BY f.fin_data_emissao DESC
                 LIMIT 100
             `;
 
             const [caixa] = await db.query(sqlCaixa, [empresaId]);
 
-            // Calcula resumo
             const resumo = {
                 entrada: caixa
-                    .filter(item => item.fin_categoria === 'Faturamento')
-                    .reduce((acc, item) => acc + item.fin_valor_total, 0),
+                    .filter((item) => item.fin_categoria === 'Faturamento')
+                    .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0),
+
                 saida: caixa
-                    .filter(item => item.fin_categoria === 'Despesa')
-                    .reduce((acc, item) => acc + item.fin_valor_total, 0),
+                    .filter((item) => item.fin_categoria === 'Despesa')
+                    .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0),
+
                 impostos: caixa
-                    .filter(item => item.fin_categoria === 'Imposto')
-                    .reduce((acc, item) => acc + item.fin_valor_total, 0)
+                    .filter((item) => item.fin_categoria === 'Imposto')
+                    .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0),
+
+                custos: caixa
+                    .filter((item) => item.fin_categoria === 'Custo')
+                    .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0)
             };
+
+            resumo.saldoAtual =
+                resumo.entrada -
+                resumo.saida -
+                resumo.impostos -
+                resumo.custos;
 
             return response.status(200).json({
                 sucesso: true,
@@ -273,24 +334,34 @@ module.exports = {
         }
     },
 
-    /**
-     * Retorna prazos (para ME e MEI via Controle Mensal)
-     */
     async obterPrazos(request, response) {
         try {
-            const empresaId = request.empresa ? request.empresa.id : Number(request.query.emp_id || request.query.empresaId || 5);
+            const empresaId = getEmpresaId(request);
+
+            if (!validarEmpresa(empresaId, response)) return;
 
             const sqlPrazos = `
-                SELECT 
+                SELECT
                     praz_id,
                     praz_descricao,
                     praz_data_vencimento,
                     praz_status,
-                    CASE 
-                        WHEN praz_status = 0 THEN 'Pendente'
+
+                    DATEDIFF(praz_data_vencimento, CURDATE()) AS dias_restantes,
+
+                    CASE
                         WHEN praz_status = 1 THEN 'Concluído'
+                        WHEN praz_status = 0
+                            AND praz_data_vencimento < CURDATE()
+                            THEN 'Vencido'
+                        WHEN praz_status = 0
+                            AND praz_data_vencimento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                            THEN 'Vence esta semana'
+                        WHEN praz_status = 0 THEN 'Pendente'
                         WHEN praz_status = 2 THEN 'Vencido'
-                    END as status_descricao
+                        ELSE 'Indefinido'
+                    END AS status_descricao
+
                 FROM PRAZOS
                 WHERE emp_id = ?
                 ORDER BY praz_data_vencimento ASC
@@ -303,9 +374,10 @@ module.exports = {
                 mensagem: 'Prazos/Controle Mensal',
                 dados: {
                     total: prazos.length,
-                    pendentes: prazos.filter(p => p.praz_status === 0).length,
-                    concluidos: prazos.filter(p => p.praz_status === 1).length,
-                    vencidos: prazos.filter(p => p.praz_status === 2).length,
+                    pendentes: prazos.filter((p) => p.status_descricao === 'Pendente').length,
+                    concluidos: prazos.filter((p) => p.status_descricao === 'Concluído').length,
+                    vencidos: prazos.filter((p) => p.status_descricao === 'Vencido').length,
+                    proximos: prazos.filter((p) => p.status_descricao === 'Vence esta semana').length,
                     prazos
                 }
             });

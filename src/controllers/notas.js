@@ -1,4 +1,4 @@
-const db = require('../controllers/connection');
+const db = require('../dataBase/connection');
 
 module.exports = {
     async cadastrarNota(request, response) {
@@ -30,17 +30,15 @@ module.exports = {
         // PASSO 1: Inserir na tabela DOCUMENTOS (A tua parte)
         // ==========================================================
         const sqlDoc = `
-            INSERT INTO DOCUMENTOS (usu_id, emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_observacao, doc_data_vencimento, doc_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+            INSERT INTO DOCUMENTOS (usu_id, emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_status)
+            VALUES (?, ?, ?, ?, ?, 1)
         `;
         const [docResult] = await db.query(sqlDoc, [
             usuarioId, 
             parseInt(emp_id), 
             parseInt(tpd_id), 
             arquivoPath, 
-            originalname, 
-            doc_observacao || null, 
-            doc_data_vencimento || null
+            originalname,  
         ]);
 
         const novoDocId = docResult.insertId; // ID do documento gerado
@@ -50,14 +48,21 @@ module.exports = {
         // ==========================================================
         // Criamos o registro financeiro já atrelado ao documento que acabou de nascer
         const sqlFin = `
-            INSERT INTO FINANCEIRO (emp_id, doc_id, fin_valor, fin_categoria, fin_data_lancamento, fin_status)
-            VALUES (?, ?, ?, ?, NOW(), 1)
+            INSERT INTO FINANCEIRO (
+                doc_id,
+                fin_valor_total,
+                fin_categoria,
+                fin_data_emissao,
+                fin_status
+            )
+            VALUES (?, ?, ?, ?, 1)
         `;
+
         await db.query(sqlFin, [
-            parseInt(emp_id),
-            novoDocId, // <--- O VÍNCULO AQUI!
+            novoDocId,
             parseFloat(fin_valor),
-            fin_categoria || 'Nota Lançada'
+            fin_categoria || 'Faturamento',
+            new Date()
         ]);
 
         // 3. Retorno de sucesso absoluto para o Frontend

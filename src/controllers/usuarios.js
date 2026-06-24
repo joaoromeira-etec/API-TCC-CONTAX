@@ -53,7 +53,7 @@ module.exports = {
         const sql = `
             SELECT
                 u.usu_id,
-                ue.usu_emp_id
+                ue.usu_emp_id,
                 u.usu_nome,
                 u.usu_email,
                 u.usu_cpf,
@@ -172,11 +172,13 @@ module.exports = {
             // Busca as empresas vinculadas ao usuário
             const sqlEmpresas = `
                 SELECT
+                    ue.usu_emp_id,
                     e.emp_id,
                     e.emp_nome_fantasia,
-                    e.emp_tipo,
-                    e.emp_status,
-                    ue.usu_emp_nivel_acesso,
+                    e.emp_cnpj,
+                    CAST(e.emp_tipo as UNSIGNED) AS emp_tipo,
+                    CAST(e.emp_status as UNSIGNED) AS emp_status,
+                    CAST(ue.usu_emp_nivel_acesso as UNSIGNED) AS usu_emp_nivel_acesso,
                     ue.usu_emp_data_vinculo
                 FROM USUARIO_EMPRESAS ue
                 INNER JOIN EMPRESAS e ON e.emp_id = ue.emp_id
@@ -196,18 +198,21 @@ module.exports = {
 
             // Mapeia as empresas com informações completas
             const empresas = empresasRows.map(emp => ({
-                emp_id: emp.emp_id,
-                nome: emp.emp_nome_fantasia,
-                tipo: emp.emp_tipo === 0 ? 'ME' : 'MEI',
-                tipoNumerico: emp.emp_tipo,
-                nivel_acesso: emp.usu_emp_nivel_acesso,
-                nivel_descricao: emp.usu_emp_nivel_acesso === 0 
-                    ? 'Visualizador' 
-                    : emp.usu_emp_nivel_acesso === 1 
-                    ? 'Gerente' 
+            usu_emp_id: emp.usu_emp_id,
+            emp_id: emp.emp_id,
+            nome: emp.emp_nome_fantasia,
+            cnpj: emp.emp_cnpj,
+            tipo: Number(emp.emp_tipo) === 0 ? 'ME' : 'MEI',
+            tipoNumerico: Number(emp.emp_tipo),
+            nivel_acesso: Number(emp.usu_emp_nivel_acesso),
+            nivel_descricao:
+                Number(emp.usu_emp_nivel_acesso) === 0
+                    ? 'Visualizador'
+                    : Number(emp.usu_emp_nivel_acesso) === 1
+                    ? 'Gerente'
                     : 'Administrador',
-                data_vinculo: emp.usu_emp_data_vinculo
-            }));
+            data_vinculo: emp.usu_emp_data_vinculo
+        }));
 
             const dados = {
                 usuario: {

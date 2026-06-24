@@ -11,6 +11,7 @@ const upload = multer({
 // Importe dos controllers
 const TipoDocumentosController = require('../controllers/tipoDocumentos');
 const DocumentosController = require('../controllers/documentos');
+const NotasController = require('../controllers/notas');
 const RegimeEmpresaController = require('../controllers/regimeEmpresa');
 const AdminController = require('../controllers/admin');
 const dashboardController = require('../controllers/dashboard')
@@ -29,7 +30,7 @@ router.delete('/tipoDocumentos/del/:id', TipoDocumentosController.ocultarTipoDoc
 router.get('/documentos', DocumentosController.listarDocumentos);
 router.get('/documentos/download/:id', DocumentosController.downloadDocumento);
 router.get('/documentos/preview/:id', DocumentosController.previewDocumento);
-router.post('/documentos',upload.single('img'),DocumentosController.cadastrarDocumentos);
+router.post('/documentos', upload.single('img'), NotasController.cadastrarNota);
 router.patch('/documentos/:id', upload.single('arquivo'), DocumentosController.editarDocumentos);
 router.delete('/documentos/:id', DocumentosController.apagarDocumentos); //Não-Recomendado.
 router.delete('/documentos/del/:id', DocumentosController.ocultarDocumentos); //Recomendado.
