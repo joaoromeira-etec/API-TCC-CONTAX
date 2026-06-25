@@ -1,6 +1,9 @@
 const db = require('../dataBase/connection');
 const { getAbasDisponiveis } = require('../utils/permissoes');
 
+const LIMITE_MEI = 6750;
+const LIMITE_ME = 20000;
+
 function getEmpresaId(request) {
     return request.empresa
         ? request.empresa.id
@@ -20,7 +23,7 @@ function getNivelAcesso(request) {
 }
 
 function validarEmpresa(empresaId, response) {
-    if (!empresaId) {
+    if (!empresaId || isNaN(empresaId)) {
         response.status(400).json({
             sucesso: false,
             mensagem: 'Empresa não informada.',
@@ -113,7 +116,7 @@ module.exports = {
             const totalDespesas = Number(financeiro.total_despesas || 0);
             const totalCustos = Number(financeiro.total_custos || 0);
 
-            const limiteMensal = tipoEmpresa === 1 ? 6750 : 20000;
+            const limiteMensal = tipoEmpresa === 1 ? LIMITE_MEI : LIMITE_ME;
             const percentualLimite = limiteMensal > 0
                 ? Math.min((totalFaturamento / limiteMensal) * 100, 100)
                 : 0;
@@ -195,6 +198,11 @@ module.exports = {
                 dados: {
                     tipo: tipoEmpresa === 0 ? 'Impostos' : 'DAS',
                     total: impostos.length,
+                    valor_total: impostos.reduce(
+                        (acc, item) => 
+                            acc + Number(item.fin_valor_total || 0), 
+                        0
+                    ),
                     impostos
                 }
             });
@@ -294,19 +302,19 @@ module.exports = {
 
             const resumo = {
                 entrada: caixa
-                    .filter((item) => item.fin_categoria === 'Faturamento')
+                    .filter((item) => item.fin_categoria?.toUpperCase() === 'FATURAMENTO')
                     .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0),
 
                 saida: caixa
-                    .filter((item) => item.fin_categoria === 'Despesa')
+                    .filter((item) => item.fin_categoria?.toUpperCase() === 'DESPESA')
                     .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0),
 
                 impostos: caixa
-                    .filter((item) => item.fin_categoria === 'Imposto')
+                    .filter((item) => item.fin_categoria?.toUpperCase() === 'IMPOSTO')
                     .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0),
 
                 custos: caixa
-                    .filter((item) => item.fin_categoria === 'Custo')
+                    .filter((item) => item.fin_categoria?.toUpperCase() === 'CUSTO')
                     .reduce((acc, item) => acc + Number(item.fin_valor_total || 0), 0)
             };
 

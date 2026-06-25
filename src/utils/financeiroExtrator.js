@@ -37,7 +37,7 @@ function parseData(texto) {
 function identificarCategoria(nomeArquivo, tipoDescricao, texto) {
   const source = `${nomeArquivo || ''} ${tipoDescricao || ''} ${texto || ''}`;
   const encontrado = CATEGORIAS_POR_TIPO.find((item) => item.matcher.test(source));
-  return encontrado ? encontrado.categoria : 'Despesa';
+  return encontrado ? encontrado.categoria : 'Faturamento';
 }
 
 async function extrairTextoPDF(caminhoArquivo) {
