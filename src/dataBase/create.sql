@@ -66,14 +66,12 @@ CREATE TABLE TIPO_DOCUMENTOS (
 
 CREATE TABLE DOCUMENTOS (
     doc_id INT PRIMARY KEY AUTO_INCREMENT,
-    usu_id INT,
     emp_id INT,
     tpd_id INT,
     doc_caminho_arquivo VARCHAR(255) NOT NULL,
     doc_nome_original VARCHAR(150) NOT NULL,
     doc_data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     doc_status BIT NOT NULL, -- 0-Inativo; 1-Ativo
-    FOREIGN KEY (usu_id) REFERENCES USUARIOS(usu_id),
     FOREIGN KEY (emp_id) REFERENCES EMPRESAS(emp_id),
     FOREIGN KEY (tpd_id) REFERENCES TIPO_DOCUMENTOS(tpd_id)
 );
