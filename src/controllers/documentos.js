@@ -162,59 +162,69 @@ module.exports = {
         }
     },
 
-async cadastrarDocumentos(request, response) {
-    try {
+    async cadastrarDocumentos(request, response) {
+        try {
 
-        // 2. Verifica se o Multer recebeu o arquivo físico da Nota Fiscal
-        if (!request.file) {
-            return response.status(400).json({
-                sucesso: false,
-                mensagem: 'Nenhum arquivo enviado.',
-                dados: null
-            });
-        }
+            const usuarioId = request.usuario?.id;
 
-        // Renomeado para 'arquivoPath' para evitar conflito com o pacote global 'path'
-        const { path: arquivoPath, originalname } = request.file;
+            if (!usuarioId) {
+                return response.status(401).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não autenticado.',
+                    dados: null
+                });
+            }
 
-        // 3. Captura os dados textuais do formulário (vinda do request.body)
-        const { tpd_id, emp_id } = request.body;
+            // 2. Verifica se o Multer recebeu o arquivo físico da Nota Fiscal
+            if (!request.file) {
+                return response.status(400).json({
+                    sucesso: false,
+                    mensagem: 'Nenhum arquivo enviado.',
+                    dados: null
+                });
+            }
 
-        // 4. Validações estritas da Empresa Cliente Destino
-        if (!emp_id) {
-            return response.status(400).json({ sucesso: false, mensagem: 'ID da empresa cliente destino é obrigatório.', dados: null });
-        }
-        if (isNaN(emp_id)) {
-            return response.status(400).json({ sucesso: false, mensagem: 'ID da empresa deve ser um valor numérico.', dados: null });
-        }
+            // Renomeado para 'arquivoPath' para evitar conflito com o pacote global 'path'
+            const { path: arquivoPath, originalname } = request.file;
 
-        // 5. Validações do Tipo de Documento
-        if (!tpd_id) {
-            return response.status(400).json({ sucesso: false, mensagem: 'Tipo do documento é obrigatório.', dados: null });
-        }
-        if (isNaN(tpd_id)) {
-            return response.status(400).json({ sucesso: false, mensagem: 'Tipo do documento deve ser um valor numérico.', dados: null });
-        }
+            // 3. Captura os dados textuais do formulário (vinda do request.body)
+            const { tpd_id, emp_id } = request.body;
 
-        // 6. Verifica se o tipo de documento informado existe e está ativo no banco
-        const sqlTipo = `
+            // 4. Validações estritas da Empresa Cliente Destino
+            if (!emp_id) {
+                return response.status(400).json({ sucesso: false, mensagem: 'ID da empresa cliente destino é obrigatório.', dados: null });
+            }
+            if (isNaN(emp_id)) {
+                return response.status(400).json({ sucesso: false, mensagem: 'ID da empresa deve ser um valor numérico.', dados: null });
+            }
+
+            // 5. Validações do Tipo de Documento
+            if (!tpd_id) {
+                return response.status(400).json({ sucesso: false, mensagem: 'Tipo do documento é obrigatório.', dados: null });
+            }
+            if (isNaN(tpd_id)) {
+                return response.status(400).json({ sucesso: false, mensagem: 'Tipo do documento deve ser um valor numérico.', dados: null });
+            }
+
+            // 6. Verifica se o tipo de documento informado existe e está ativo no banco
+            const sqlTipo = `
             SELECT tpd_id
             FROM TIPO_DOCUMENTOS
             WHERE tpd_id = ?
             AND tpd_status = 1
         `;
-        const [tipoResult] = await db.query(sqlTipo, [tpd_id]);
+            const [tipoResult] = await db.query(sqlTipo, [tpd_id]);
 
-        if (tipoResult.length === 0) {
-            return response.status(404).json({
-                sucesso: false,
-                mensagem: 'Tipo de documento não encontrado ou inativo no sistema.',
-                dados: null
-            });
-        }
+            if (tipoResult.length === 0) {
+                return response.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Tipo de documento não encontrado ou inativo no sistema.',
+                    dados: null
+                });
+            }
 
-        // 7. Query que cria o registro e vincula diretamente à empresa cliente (emp_id)
-        const sql = `
+            // 7. Query que cria o registro e vincula diretamente à empresa cliente (emp_id)
+            const sql = `
             INSERT INTO DOCUMENTOS (
                 usu_id, 
                 emp_id, 
@@ -222,44 +232,44 @@ async cadastrarDocumentos(request, response) {
                 doc_caminho_arquivo, 
                 doc_nome_original, 
                 doc_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+            ) VALUES (?, ?, ?, ?, ?, 1)
         `;
 
-        const values = [
-            usuarioId,
-            parseInt(emp_id),
-            parseInt(tpd_id),
-            arquivoPath,
-            originalname,
-        ];
+            const values = [
+                usuarioId,
+                parseInt(emp_id),
+                parseInt(tpd_id),
+                arquivoPath,
+                originalname
+            ];
 
-        const [result] = await db.query(sql, values);
+            const [result] = await db.query(sql, values);
 
-        // 8. Monta o objeto com os dados exatos salvos para retornar à aplicação
-        const dados = {
-            doc_id: result.insertId, // ID da Nota recém-gerada (Chave para a extração do financeiro)
-            usu_id: usuarioId,
-            emp_id: parseInt(emp_id),
-            tpd_id: parseInt(tpd_id),
-            doc_caminho_arquivo: arquivoPath,
-            doc_nome_original: originalname,
-            doc_status: 1
-        };
+            // 8. Monta o objeto com os dados exatos salvos para retornar à aplicação
+            const dados = {
+                doc_id: result.insertId, // ID da Nota recém-gerada (Chave para a extração do financeiro)
+                usu_id: usuarioId,
+                emp_id: parseInt(emp_id),
+                tpd_id: parseInt(tpd_id),
+                doc_caminho_arquivo: arquivoPath,
+                doc_nome_original: originalname,
+                doc_status: 1
+            };
 
-        return response.status(201).json({
-            sucesso: true,
-            mensagem: 'Documento lançado e vinculado à empresa com sucesso.',
-            dados
-        });
+            return response.status(201).json({
+                sucesso: true,
+                mensagem: 'Documento lançado e vinculado à empresa com sucesso.',
+                dados
+            });
 
-    } catch (error) {
-        return response.status(500).json({
-            sucesso: false,
-            mensagem: 'Erro interno ao cadastrar o documento no servidor.',
-            dados: error.message
-        });
-    }
-},
+        } catch (error) {
+            return response.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro interno ao cadastrar o documento no servidor.',
+                dados: error.message
+            });
+        }
+    },
     async editarDocumentos(request, response) {
         try {
             const { id } = request.params;

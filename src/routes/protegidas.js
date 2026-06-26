@@ -1,5 +1,8 @@
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
+
+const upload = multer({ dest: 'uploads/' });
 
 // Importar middleware de autenticação
 const { autenticar, validarPermissao } = require('../middlewares/auth');
@@ -34,8 +37,9 @@ router.get('/dashboard/prazos', autenticar, dashboardController.obterPrazos);
 router.get('/documentos/autenticados', autenticar, documentosController.listarDocumentos);
 
 // Upload de documentos - apenas ADM (nível 2)
-router.post('/documentos/autenticados', 
+router.post('/documentos/autenticados',
     autenticar,
+    upload.single('arquivo'),
     documentosController.cadastrarDocumentos
 );
 

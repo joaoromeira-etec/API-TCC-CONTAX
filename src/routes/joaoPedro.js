@@ -21,7 +21,7 @@ const dashboardController = require('../controllers/dashboard')
 
 // Rotas para Tipo de Documentos
 router.get('/tipoDocumentos', TipoDocumentosController.listarTipoDocumentos);
-router.post('/tipoDocumentos', TipoDocumentosController.cadastrarTipoDocumentos);   
+router.post('/tipoDocumentos', TipoDocumentosController.cadastrarTipoDocumentos);
 router.patch('/tipoDocumentos/:id', TipoDocumentosController.editarTipoDocumentos); // Params.
 router.delete('/tipoDocumentos/:id', TipoDocumentosController.apagarTipoDocumentos); // Params, Não-Recomendado.
 router.delete('/tipoDocumentos/del/:id', TipoDocumentosController.ocultarTipoDocumentos); // Params, Recomendado.
@@ -30,7 +30,8 @@ router.delete('/tipoDocumentos/del/:id', TipoDocumentosController.ocultarTipoDoc
 router.get('/documentos', DocumentosController.listarDocumentos);
 router.get('/documentos/download/:id', DocumentosController.downloadDocumento);
 router.get('/documentos/preview/:id', DocumentosController.previewDocumento);
-router.post('/documentos', upload.single('img'), NotasController.cadastrarNota);
+// Upload de nota fiscal com arquivo multipart
+router.post('/documentos', upload.any(), NotasController.cadastrarNota);
 router.patch('/documentos/:id', upload.single('arquivo'), DocumentosController.editarDocumentos);
 router.delete('/documentos/:id', DocumentosController.apagarDocumentos); //Não-Recomendado.
 router.delete('/documentos/del/:id', DocumentosController.ocultarDocumentos); //Recomendado.
@@ -48,7 +49,7 @@ router.get('/admin/empresas-risco', AdminController.listarEmpresasRisco);
 router.get('/admin/ultimos-documentos', AdminController.listarUltimosDocumentos);
 router.get('/admin/prazos-pendentes', AdminController.listarPrazosPendentes);
 router.get('/admin/auditoria-recente', AdminController.listarAuditoriaRecente);
-router.get('/admin/financeiro-mensal',AdminController.listarFinanceiroMensal);
+router.get('/admin/financeiro-mensal', AdminController.listarFinanceiroMensal);
 
 // Rotas para o Dashboard (Protegidas)
 router.get('/dashboard/abas', dashboardController.obterAbas);
