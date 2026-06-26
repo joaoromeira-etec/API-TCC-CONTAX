@@ -155,14 +155,12 @@ module.exports = {
 
 async cadastrarDocumentos(request, response) {
     try {
-        // 1. Captura o usuário (Admin) logado injetado pelo middleware auth.js
-        const usuarioId = request.user?.id || request.usuario?.id || null;
 
         // 2. Verifica se o Multer recebeu o arquivo físico da Nota Fiscal
         if (!request.file) {
             return response.status(400).json({
                 sucesso: false,
-                mensagem: 'Nenhum arquivo enviado. Certifique-se de preencher o campo "img".',
+                mensagem: 'Nenhum arquivo enviado.',
                 dados: null
             });
         }
@@ -171,7 +169,7 @@ async cadastrarDocumentos(request, response) {
         const { path: arquivoPath, originalname } = request.file;
 
         // 3. Captura os dados textuais do formulário (vinda do request.body)
-        const { tpd_id, emp_id, doc_observacao, doc_data_vencimento } = request.body;
+        const { tpd_id, emp_id } = request.body;
 
         // 4. Validações estritas da Empresa Cliente Destino
         if (!emp_id) {
@@ -213,8 +211,6 @@ async cadastrarDocumentos(request, response) {
                 tpd_id, 
                 doc_caminho_arquivo, 
                 doc_nome_original, 
-                doc_observacao, 
-                doc_data_vencimento, 
                 doc_status
             ) VALUES (?, ?, ?, ?, ?, ?, 1)
         `;
@@ -224,8 +220,6 @@ async cadastrarDocumentos(request, response) {
             parseInt(tpd_id),
             arquivoPath,
             originalname,
-            doc_observacao || null,
-            doc_data_vencimento || null
         ];
 
         const [result] = await db.query(sql, values);
@@ -237,8 +231,6 @@ async cadastrarDocumentos(request, response) {
             tpd_id: parseInt(tpd_id),
             doc_caminho_arquivo: arquivoPath,
             doc_nome_original: originalname,
-            doc_observacao: doc_observacao || null,
-            doc_data_vencimento: doc_data_vencimento || null,
             doc_status: 1
         };
 

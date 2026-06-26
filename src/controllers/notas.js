@@ -13,13 +13,9 @@ module.exports = {
         const { 
             emp_id,          // Empresa cliente destino
             tpd_id,          // Tipo de documento (ex: Nota Fiscal)
-            doc_observacao, 
-            doc_data_vencimento,
             fin_valor,       // <--- DADO FINANCEIRO: Valor da nota
             fin_categoria    // <--- DADO FINANCEIRO: Categoria (Imposto, Serviço, etc.)
         } = request.body;
-
-        const usuarioId = request.user?.id || request.usuario?.id || null;
 
         // Validação básica dos IDs cruciais
         if (!emp_id || !tpd_id || !fin_valor) {
@@ -30,11 +26,10 @@ module.exports = {
         // PASSO 1: Inserir na tabela DOCUMENTOS (A tua parte)
         // ==========================================================
         const sqlDoc = `
-            INSERT INTO DOCUMENTOS (usu_id, emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_status)
+            INSERT INTO DOCUMENTOS (emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_status)
             VALUES (?, ?, ?, ?, ?, 1)
         `;
         const [docResult] = await db.query(sqlDoc, [
-            usuarioId, 
             parseInt(emp_id), 
             parseInt(tpd_id), 
             arquivoPath, 
