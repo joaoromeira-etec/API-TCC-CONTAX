@@ -12,26 +12,28 @@ module.exports = {
         // 2. Captura os dados combinados (Documento + Financeiro) vindos do formulário do MenuAdm
         const { 
             emp_id,          // Empresa cliente destino
-            tpd_id,          // Tipo de documento (ex: Nota Fiscal)
+            tpd_id,
+            usu_id,          // Tipo de documento (ex: Nota Fiscal)
             fin_valor,       // <--- DADO FINANCEIRO: Valor da nota
             fin_categoria    // <--- DADO FINANCEIRO: Categoria (Imposto, Serviço, etc.)
         } = request.body;
 
         // Validação básica dos IDs cruciais
-        if (!emp_id || !tpd_id || !fin_valor) {
-            return response.status(400).json({ sucesso: false, mensagem: 'Empresa, Tipo de documento e Valor são obrigatórios.' });
+        if (!emp_id || !tpd_id || !fin_valor || !usu_id) {
+            return response.status(400).json({ sucesso: false, mensagem: 'Empresa, Tipo de documento, Valor e Usuário são obrigatórios.' });
         }
 
         // ==========================================================
         // PASSO 1: Inserir na tabela DOCUMENTOS (A tua parte)
         // ==========================================================
         const sqlDoc = `
-            INSERT INTO DOCUMENTOS (emp_id, tpd_id, doc_caminho_arquivo, doc_nome_original, doc_status)
+            INSERT INTO DOCUMENTOS (emp_id, tpd_id, usu_id, doc_caminho_arquivo, doc_nome_original, doc_status)
             VALUES (?, ?, ?, ?, ?, 1)
         `;
         const [docResult] = await db.query(sqlDoc, [
             parseInt(emp_id), 
             parseInt(tpd_id), 
+            parseInt(usu_id),
             arquivoPath, 
             originalname,  
         ]);
