@@ -91,10 +91,7 @@ const autenticar = async (request, response, next) => {
 
         // Valida vínculo ativo do usuário com a empresa
         const [vinculos] = await db.query(`
-            SELECT 
-                CAST (usu_emp_nivel_acesso AS UNSIGNED) AS usu_emp_nivel_acesso,
-                usu_emp_data_vinculo,
-                CAST (usu_emp_status AS UNSIGNED) AS usu_emp_status
+            SELECT usu_emp_nivel_acesso, usu_emp_data_vinculo, usu_emp_status
             FROM USUARIO_EMPRESAS
             WHERE usu_id = ? AND emp_id = ? AND usu_emp_status = 1
         `, [usuarioId, empresaId]);
@@ -115,17 +112,17 @@ const autenticar = async (request, response, next) => {
 
         request.empresa = {
             id: empresaId,
-            tipo: Number(empresas[0].emp_tipo), // 0 = ME, 1 = MEI
+            tipo: empresas[0].emp_tipo, // 0 = ME, 1 = MEI
             nome: empresas[0].emp_nome_fantasia
         };
 
         request.acesso = {
-            nivel: Number(vinculos[0].usu_emp_nivel_acesso) // 0 = Visualizador, 1 = Gerente, 2 = ADM
+            nivel: vinculos[0].usu_emp_nivel_acesso // 0 = Visualizador, 1 = Gerente, 2 = ADM
         };
 
         // Disponibiliza informações para middlewares e controllers
-        request.nivelAcesso = Number(vinculos[0].usu_emp_nivel_acesso);
-        request.tipoEmpresa = Number(empresas[0].emp_tipo);
+        request.nivelAcesso = vinculos[0].usu_emp_nivel_acesso;
+        request.tipoEmpresa = empresas[0].emp_tipo;
 
         next();
 

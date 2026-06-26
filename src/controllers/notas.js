@@ -2,6 +2,8 @@ const db = require('../dataBase/connection');
 
 module.exports = {
     async cadastrarNota(request, response) {
+        console.log("Body:", request.body);
+        console.log("File:", request.file);
         try {
         // 1. Validações Iniciais do Arquivo
         if (!request.file) {
@@ -12,18 +14,17 @@ module.exports = {
         // 2. Captura os dados combinados (Documento + Financeiro) vindos do formulário do MenuAdm
         const { 
             emp_id,          // Empresa cliente destino
-            tpd_id,          // Tipo de documento (ex: Nota Fiscal)
-            doc_observacao, 
-            doc_data_vencimento,
+            tpd_id,          // Tipo de documento (Nota Fiscal, Recibo, etc.)
+            usu_id,          
             fin_valor,       // <--- DADO FINANCEIRO: Valor da nota
             fin_categoria    // <--- DADO FINANCEIRO: Categoria (Imposto, Serviço, etc.)
         } = request.body;
 
-        const usuarioId = request.user?.id || request.usuario?.id || null;
+        
 
         // Validação básica dos IDs cruciais
-        if (!emp_id || !tpd_id || !fin_valor) {
-            return response.status(400).json({ sucesso: false, mensagem: 'Empresa, Tipo de documento e Valor são obrigatórios.' });
+        if (!emp_id || !tpd_id || !fin_valor || !usu_id) {
+            return response.status(400).json({ sucesso: false, mensagem: 'Empresa, Tipo de documento, Valor e Usuário são obrigatórios.' });
         }
 
         // ==========================================================
@@ -34,9 +35,9 @@ module.exports = {
             VALUES (?, ?, ?, ?, ?, 1)
         `;
         const [docResult] = await db.query(sqlDoc, [
-            usuarioId, 
             parseInt(emp_id), 
             parseInt(tpd_id), 
+            parseInt(usu_id),
             arquivoPath, 
             originalname,  
         ]);

@@ -218,7 +218,7 @@ module.exports = {
                 usuario: {
                     id: usuarioRows[0].usu_id,
                     nome: usuarioRows[0].usu_nome,
-                    status: Number(usuarioRows[0].usu_status)
+                    status: usuarioRows[0].usu_status
                 },
                 empresas: empresas,
                 empresa_padrao: empresas[0] // Define a primeira empresa como padrão
@@ -272,7 +272,7 @@ module.exports = {
             empresas: rows.map(row => ({
                 emp_id: row.emp_id,
                 nome: row.emp_nome_fantasia,
-                nivel: Number(row.usu_emp_nivel_acesso),
+                nivel: row.usu_emp_nivel_acesso,
                 data_vinculo: row.usu_emp_data_vinculo
             }))
         };
@@ -332,15 +332,6 @@ module.exports = {
             return response.status(400).json({
                 sucesso: false,
                 mensagem: 'ID da empresa e nível de acesso devem ser numéricos.',
-                dados: null
-            });
-        }
-
-        // 2¹. Validação de nível de acesso
-        if (![0, 1, 2].includes(Number(nivel_acesso))) {
-            return response.status(400).json({
-                sucesso: false,
-                mensagem: 'Nível de acesso inválido.',
                 dados: null
             });
         }
@@ -583,24 +574,6 @@ module.exports = {
             });
         }
 
-        // 4¹. Validação de status
-        if (![0, 1].includes(Number(status))) {
-            return response.status(400).json({
-                sucesso: false,
-                mensagem: 'Status inválido.',
-                dados: null
-            });
-        }
-
-        // 4². Validação de alterar_senha
-        if (![0, 1].includes(Number(alterar_senha))) {
-            return response.status(400).json({
-                sucesso: false,
-                mensagem: 'Valor de alterar_senha inválido.',
-                dados: null
-            });
-        }
-
         // 5. Validação de telefone
         const telefoneLimpo = telefone.replace(/\D/g, '');
 
@@ -732,7 +705,7 @@ module.exports = {
             //Parâmetro passado via url na chamada da api pelo front-end
             const {id} = request.params;
             //comando de exclusão
-            const sql = `DELETE FROM USUARIOS WHERE usu_id = ?`;
+            const sql = `DELETE FROM usuarios WHERE usu_id = ?`;
             //array com parâmetros da exclusão
             const values = [id];
             //executa instrução no banco de dados

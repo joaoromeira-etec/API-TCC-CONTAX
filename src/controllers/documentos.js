@@ -19,6 +19,7 @@ module.exports = {
                 id,
                 nome,
                 tpd_id,
+                usu_id,
                 categoria,
                 status,
                 page = 1,
@@ -76,6 +77,11 @@ module.exports = {
                 values.push(parseInt(tpd_id));
             }
 
+            if (usu_id !== undefined && usu_id !== '') {
+                sqlWhere += ' AND d.usu_id = ?';
+                values.push(parseInt(usu_id));
+            }
+
             if (categoria) {
                 sqlWhere += ' AND f.fin_categoria = ?';
                 values.push(categoria);
@@ -84,6 +90,8 @@ module.exports = {
             const sql = `
                 SELECT
                     d.doc_id,
+                    d.usu_id,
+                    u.usu_nome,
                     d.emp_id,
                     e.emp_nome_fantasia,
                     e.emp_cnpj,
@@ -98,6 +106,8 @@ module.exports = {
                     f.fin_categoria,
                     f.fin_data_emissao
                 FROM DOCUMENTOS d
+                LEFT JOIN USUARIOS u
+                    ON u.usu_id = d.usu_id
                 LEFT JOIN EMPRESAS e
                     ON e.emp_id = d.emp_id
                 LEFT JOIN TIPO_DOCUMENTOS t
@@ -144,7 +154,6 @@ module.exports = {
             });
 
         } catch (error) {
-            
             return response.status(500).json({
                 sucesso: false,
                 mensagem: 'Erro ao listar documentos.',
@@ -155,14 +164,12 @@ module.exports = {
 
 async cadastrarDocumentos(request, response) {
     try {
-        // 1. Captura o usuário (Admin) logado injetado pelo middleware auth.js
-        const usuarioId = request.user?.id || request.usuario?.id || null;
 
         // 2. Verifica se o Multer recebeu o arquivo físico da Nota Fiscal
         if (!request.file) {
             return response.status(400).json({
                 sucesso: false,
-                mensagem: 'Nenhum arquivo enviado. Certifique-se de preencher o campo "img".',
+                mensagem: 'Nenhum arquivo enviado.',
                 dados: null
             });
         }
@@ -171,7 +178,7 @@ async cadastrarDocumentos(request, response) {
         const { path: arquivoPath, originalname } = request.file;
 
         // 3. Captura os dados textuais do formulário (vinda do request.body)
-        const { tpd_id, emp_id, doc_observacao, doc_data_vencimento } = request.body;
+        const { tpd_id, emp_id } = request.body;
 
         // 4. Validações estritas da Empresa Cliente Destino
         if (!emp_id) {
@@ -209,23 +216,21 @@ async cadastrarDocumentos(request, response) {
         // 7. Query que cria o registro e vincula diretamente à empresa cliente (emp_id)
         const sql = `
             INSERT INTO DOCUMENTOS (
+                usu_id, 
                 emp_id, 
                 tpd_id, 
                 doc_caminho_arquivo, 
                 doc_nome_original, 
-                doc_observacao, 
-                doc_data_vencimento, 
                 doc_status
-            ) VALUES (?, ?, ?, ?, ?, ?, 1)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
         `;
 
         const values = [
+            usuarioId,
             parseInt(emp_id),
             parseInt(tpd_id),
             arquivoPath,
             originalname,
-            doc_observacao || null,
-            doc_data_vencimento || null
         ];
 
         const [result] = await db.query(sql, values);
@@ -233,12 +238,11 @@ async cadastrarDocumentos(request, response) {
         // 8. Monta o objeto com os dados exatos salvos para retornar à aplicação
         const dados = {
             doc_id: result.insertId, // ID da Nota recém-gerada (Chave para a extração do financeiro)
+            usu_id: usuarioId,
             emp_id: parseInt(emp_id),
             tpd_id: parseInt(tpd_id),
             doc_caminho_arquivo: arquivoPath,
             doc_nome_original: originalname,
-            doc_observacao: doc_observacao || null,
-            doc_data_vencimento: doc_data_vencimento || null,
             doc_status: 1
         };
 
@@ -249,7 +253,6 @@ async cadastrarDocumentos(request, response) {
         });
 
     } catch (error) {
-        console.log("ERRO DOCUMENTOS: ", error);
         return response.status(500).json({
             sucesso: false,
             mensagem: 'Erro interno ao cadastrar o documento no servidor.',
@@ -262,6 +265,7 @@ async cadastrarDocumentos(request, response) {
             const { id } = request.params;
 
             const {
+                usu_id,
                 emp_id,
                 tpd_id,
                 status
@@ -276,6 +280,7 @@ async cadastrarDocumentos(request, response) {
             }
 
             if (
+                !usu_id ||
                 !emp_id ||
                 !tpd_id ||
                 status === undefined
@@ -288,6 +293,7 @@ async cadastrarDocumentos(request, response) {
             }
 
             if (
+                isNaN(usu_id) ||
                 isNaN(emp_id) ||
                 isNaN(tpd_id) ||
                 isNaN(status)
@@ -311,6 +317,23 @@ async cadastrarDocumentos(request, response) {
                 return response.status(404).json({
                     sucesso: false,
                     mensagem: 'Documento não encontrado.',
+                    dados: null
+                });
+            }
+
+            const sqlUsuario = `
+                SELECT usu_id
+                FROM USUARIOS
+                WHERE usu_id = ?
+                AND usu_status = 1
+            `;
+
+            const [usuarioResult] = await db.query(sqlUsuario, [usu_id]);
+
+            if (usuarioResult.length === 0) {
+                return response.status(404).json({
+                    sucesso: false,
+                    mensagem: 'Usuário não encontrado ou inativo.',
                     dados: null
                 });
             }
@@ -352,12 +375,14 @@ async cadastrarDocumentos(request, response) {
             let sql = `
                 UPDATE DOCUMENTOS
                 SET
+                    usu_id = ?,
                     emp_id = ?,
                     tpd_id = ?,
                     doc_status = ?
             `;
 
             const values = [
+                parseInt(usu_id),
                 parseInt(emp_id),
                 parseInt(tpd_id),
                 parseInt(status)
@@ -393,6 +418,7 @@ async cadastrarDocumentos(request, response) {
 
             const dados = {
                 doc_id: parseInt(id),
+                usu_id: parseInt(usu_id),
                 emp_id: parseInt(emp_id),
                 tpd_id: parseInt(tpd_id),
                 doc_status: parseInt(status),

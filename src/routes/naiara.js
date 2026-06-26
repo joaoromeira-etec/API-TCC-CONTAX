@@ -21,7 +21,7 @@ router.delete('/usuarios/del/:id', usuariosController.ocultarUsuarios);
 router.get('/empresas', empresasController.listarEmpresas);
 router.get('/empresas/login', empresasController.loginEmpresas);
 router.post('/empresas', empresasController.cadastrarEmpresas);
-router.post('/empresas/enderecos/:id', empresasController.cadastrarEmpresaEnderecos);
+router.post('/empresas/enderecos:id', empresasController.cadastrarEmpresaEnderecos);
 router.patch('/empresas/:id', empresasController.editarEmpresas);
 router.delete('/empresas/:id', empresasController.apagarEmpresas);
 router.delete('/empresas/del/:id', empresasController.ocultarEmpresas);
