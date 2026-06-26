@@ -66,6 +66,7 @@ CREATE TABLE TIPO_DOCUMENTOS (
 
 CREATE TABLE DOCUMENTOS (
     doc_id INT PRIMARY KEY AUTO_INCREMENT,
+    usu_id INT
     emp_id INT,
     tpd_id INT,
     doc_caminho_arquivo VARCHAR(255) NOT NULL,
